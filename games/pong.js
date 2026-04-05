@@ -2,7 +2,7 @@ module.exports = function(io) {
 
 // ── Config ──
 var TPS = 60;
-var NET_TPS = 30;
+var NET_TPS = 40;
 var ARENA = 800; // square arena
 var PAD_LEN = 120;
 var PAD_THICK = 12;
@@ -467,38 +467,83 @@ setInterval(function() {
   io.volatile.emit('s', state);
 }, 1000 / NET_TPS);
 
+// ── Replace a bot with a human player mid-game ──
+function replaceBotWithHuman(socketId, name) {
+  // Find an alive bot to replace
+  var botId = null;
+  for (var id in players) {
+    if (players[id].isBot && players[id].alive && players[id].side) {
+      botId = id;
+      break;
+    }
+  }
+  if (!botId) return false;
+
+  var bot = players[botId];
+  // Create human player taking over bot's side, position, score
+  players[socketId] = {
+    side: bot.side, name: name, color: bot.color,
+    pos: bot.pos, score: bot.score, alive: true,
+    input: 0, effects: bot.effects, isBot: false,
+  };
+  sideMap[bot.side] = socketId;
+  // Remove bot
+  delete players[botId];
+  io.emit('pwmsg', { msg: name + ' reemplazo a ' + bot.name });
+  return true;
+}
+
 // ── Sockets ──
 io.on('connection', function(socket) {
   socket.on('join', function(data) {
     var name = (data.name || 'Jugador').substring(0, 12);
-    players[socket.id] = { side: null, name: name, color: '#fff', pos: ARENA / 2, score: 0, alive: true, input: 0, effects: {}, isBot: false };
-    assignSides();
-    if (phase === 'waiting') phaseStart = Date.now();
+
+    if (phase === 'playing') {
+      // Try to replace a bot
+      if (!replaceBotWithHuman(socket.id, name)) {
+        // No bots to replace, spectate
+        players[socket.id] = { side: null, name: name, color: '#fff', pos: ARENA / 2, score: 0, alive: false, input: 0, effects: {}, isBot: false };
+      }
+    } else {
+      players[socket.id] = { side: null, name: name, color: '#fff', pos: ARENA / 2, score: 0, alive: true, input: 0, effects: {}, isBot: false };
+      assignSides();
+      if (phase === 'waiting') phaseStart = Date.now();
+    }
     io.emit('phase', { phase: phase, time: LOBBY_TIME });
   });
 
   socket.on('input', function(data) {
     var p = players[socket.id];
-    if (!p) return;
-    p.input = data.dir || 0; // -1, 0, 1
+    if (!p || !p.alive) return;
+    p.input = data.dir || 0;
   });
 
   socket.on('disconnect', function() {
     var p = players[socket.id];
-    if (p && p.side) { delete sideMap[p.side]; }
+    if (p && p.side) {
+      if (phase === 'playing' && p.alive) {
+        // Replace leaving human with a bot to keep game going
+        var botId = 'bot_' + (++botIdCounter);
+        players[botId] = {
+          side: p.side, name: 'Bot', color: p.color,
+          pos: p.pos, score: p.score, alive: true,
+          input: 0, effects: p.effects || {}, isBot: true,
+        };
+        sideMap[p.side] = botId;
+      } else {
+        delete sideMap[p.side];
+      }
+    }
     delete players[socket.id];
-    // If in game and only 1 human left (or 0), end the game
+
     if (phase === 'playing') {
       var aliveHumans = Object.keys(players).filter(function(id) { return players[id].alive && players[id].side && !players[id].isBot; });
-      var alive = Object.keys(players).filter(function(id) { return players[id].alive && players[id].side; });
       if (aliveHumans.length === 0) {
-        // No humans left, end game
-        endGame(alive[0]);
-      } else if (alive.length <= 1) {
+        var alive = Object.keys(players).filter(function(id) { return players[id].alive && players[id].side; });
         endGame(alive[0]);
       }
     }
-    assignSides();
+    if (phase !== 'playing') assignSides();
   });
 });
 
