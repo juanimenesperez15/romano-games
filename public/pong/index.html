@@ -77,14 +77,19 @@ var isTouch=('ontouchstart' in window)||(navigator.maxTouchPoints>0);
 var socket=io('/pong',{transports:['websocket']});
 var joined=false,state=null,ARENA=800;
 
+var dpr=window.devicePixelRatio||1;
+var cssSize=100;
 function resize(){
-  var maxH=isTouch?innerHeight-120:innerHeight-60;
+  var maxH=isTouch?innerHeight-130:innerHeight-60;
   var maxW=innerWidth-20;
-  var s=Math.min(maxW,maxH,ARENA);
-  canvas.width=s;canvas.height=s;
+  cssSize=Math.min(maxW,maxH,ARENA);
+  canvas.width=cssSize*dpr;
+  canvas.height=cssSize*dpr;
+  canvas.style.width=cssSize+'px';
+  canvas.style.height=cssSize+'px';
 }
 resize();addEventListener('resize',resize);
-function sc(){return canvas.width/ARENA;}
+function sc(){return (cssSize*dpr)/ARENA;}
 
 // Show mobile controls
 if(isTouch){
