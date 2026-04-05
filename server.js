@@ -13,6 +13,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Load game modules
 require('./games/snake')(io.of('/snake'));
 require('./games/pong')(io.of('/pong'));
+require('./games/survival')(io.of('/survival'));
 
 var PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, '0.0.0.0', function() {
