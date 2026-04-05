@@ -1,7 +1,7 @@
 module.exports = function(io) {
 
 // ── Config ──
-var TPS = 60, NET_TPS = 20;
+var TPS = 60, NET_TPS = 30;
 var MAP = 2000;
 var PLAYER_R = 14, PLAYER_SPEED = 2.8, PLAYER_HP = 100;
 var LOBBY_TIME = 20, MATCH_TIME = 180; // 3 min match
