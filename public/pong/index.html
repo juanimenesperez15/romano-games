@@ -207,11 +207,15 @@ function render(){
   ctx.setLineDash([]);
   ctx.beginPath();ctx.arc(ARENA*s/2,ARENA*s/2,50*s,0,Math.PI*2);ctx.strokeStyle='rgba(255,255,255,.03)';ctx.stroke();
 
-  // Colored walls
+  // Colored walls - alive=thin color line, dead=solid white wall
   var walls={top:[0,0,ARENA,0],bottom:[0,ARENA,ARENA,ARENA],left:[0,0,0,ARENA],right:[ARENA,0,ARENA,ARENA]};
   for(var wn in walls){
     var w=walls[wn],pad=state.pads[wn];
-    if(pad&&pad.alive){
+    if(pad&&!pad.alive){
+      // Dead = solid wall
+      ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=5*s;
+      ctx.beginPath();ctx.moveTo(w[0]*s,w[1]*s);ctx.lineTo(w[2]*s,w[3]*s);ctx.stroke();
+    } else if(pad&&pad.alive){
       ctx.strokeStyle=pad.color;ctx.globalAlpha=0.25;ctx.lineWidth=3*s;
       ctx.beginPath();ctx.moveTo(w[0]*s,w[1]*s);ctx.lineTo(w[2]*s,w[3]*s);ctx.stroke();
       ctx.globalAlpha=1;

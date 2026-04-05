@@ -267,6 +267,7 @@ function checkPadCollision(b) {
 }
 
 // ── Check if ball went past a wall (goal) ──
+// Only counts as goal if the side owner is alive. Dead sides are solid walls.
 function checkGoal(b) {
   var scored = null;
   if (b.y - b.r <= 0) scored = 'top';
@@ -277,19 +278,19 @@ function checkGoal(b) {
   if (!scored) return false;
 
   var ownerId = sideMap[scored];
-  if (ownerId && players[ownerId] && players[ownerId].alive) {
-    players[ownerId].score++;
-    if (players[ownerId].score >= SCORE_TO_WIN) {
-      players[ownerId].alive = false;
-      // Check if only one left
-      var alive = [];
-      for (var id in players) { if (players[id].alive && players[id].side) alive.push(id); }
-      if (alive.length <= 1) {
-        endGame(alive[0] || ownerId);
-      }
+  // Dead or missing = wall, ball already bounced, not a goal
+  if (!ownerId || !players[ownerId] || !players[ownerId].alive) return false;
+
+  players[ownerId].score++;
+  if (players[ownerId].score >= SCORE_TO_WIN) {
+    players[ownerId].alive = false;
+    var alive = [];
+    for (var id in players) { if (players[id].alive && players[id].side) alive.push(id); }
+    if (alive.length <= 1) {
+      endGame(alive[0] || ownerId);
     }
-    io.emit('goal', { side: scored, scores: getScores() });
   }
+  io.emit('goal', { side: scored, scores: getScores() });
   return true;
 }
 
