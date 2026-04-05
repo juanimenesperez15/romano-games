@@ -138,33 +138,37 @@ function fillBotsForGame() {
 }
 
 function updateBotAI() {
-  if (!ball) return;
+  // Collect all active balls
+  var allBalls = [];
+  if (ball) allBalls.push(ball);
+  for (var bi = 0; bi < balls.length; bi++) allBalls.push(balls[bi]);
+  if (!allBalls.length) return;
 
   for (var id in players) {
     var p = players[id];
     if (!p.isBot || !p.alive || !p.side) continue;
 
-    // Determine which ball axis the bot tracks
-    var targetPos;
-    if (p.side === 'top' || p.side === 'bottom') {
-      // Horizontal paddle: track ball's X position
-      targetPos = ball.x;
-    } else {
-      // Vertical paddle: track ball's Y position
-      targetPos = ball.y;
+    // Find closest ball heading toward this bot's side
+    var isHoriz = (p.side === 'top' || p.side === 'bottom');
+    var bestDist = Infinity, targetPos = isHoriz ? ball.x : ball.y;
+    for (var i = 0; i < allBalls.length; i++) {
+      var ab = allBalls[i];
+      // Check if ball is heading toward this side
+      var heading = false;
+      if (p.side === 'top' && ab.vy < 0) heading = true;
+      if (p.side === 'bottom' && ab.vy > 0) heading = true;
+      if (p.side === 'left' && ab.vx < 0) heading = true;
+      if (p.side === 'right' && ab.vx > 0) heading = true;
+      var dist = isHoriz ? Math.abs(ab.y - (p.side === 'top' ? 0 : ARENA)) : Math.abs(ab.x - (p.side === 'left' ? 0 : ARENA));
+      if (heading && dist < bestDist) { bestDist = dist; targetPos = isHoriz ? ab.x : ab.y; }
     }
 
     var diff = targetPos - p.pos;
     var padLen = getPlayerPadLen(p);
     var half = padLen / 2;
-
-    // Only move if ball is more than BOT_DEADZONE px off from pad center
-    if (Math.abs(diff) > BOT_DEADZONE) {
-      if (diff < 0) {
-        p.pos = Math.max(half, p.pos - BOT_SPEED);
-      } else {
-        p.pos = Math.min(ARENA - half, p.pos + BOT_SPEED);
-      }
+    if (Math.abs(diff) > 10) {
+      if (diff < 0) p.pos = Math.max(half, p.pos - BOT_SPEED);
+      else p.pos = Math.min(ARENA - half, p.pos + BOT_SPEED);
     }
   }
 }
