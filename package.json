@@ -1,0 +1,8 @@
+{
+  "name": "romano-games",
+  "version": "1.0.0",
+  "description": "Las Bolas de Romano - Menu de minijuegos",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "dependencies": { "express": "^4.18.2", "http-proxy-middleware": "^3.0.0" }
+}
