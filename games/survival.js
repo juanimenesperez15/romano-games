@@ -36,24 +36,34 @@ var winner = null;
 // ── Map generation ──
 function genObstacles() {
   obstacles = [];
-  // Random boxes
-  for (var i = 0; i < 40; i++) {
-    var size = 20 + Math.random() * 40;
+  // Wooden crates (destructible)
+  for (var i = 0; i < 30; i++) {
+    var s = 22 + Math.random() * 30;
     obstacles.push({
-      x: 100 + Math.random() * (MAP - 200),
-      y: 100 + Math.random() * (MAP - 200),
-      w: size, h: size,
-      hp: 80, color: '#4a3728',
+      x: 120 + Math.random() * (MAP - 240), y: 120 + Math.random() * (MAP - 240),
+      w: s, h: s, hp: 60, type: 'crate',
     });
   }
-  // Some bigger rocks
-  for (var j = 0; j < 15; j++) {
-    var rs = 30 + Math.random() * 30;
+  // Barrels (small, destructible)
+  for (var b = 0; b < 15; b++) {
     obstacles.push({
-      x: 100 + Math.random() * (MAP - 200),
-      y: 100 + Math.random() * (MAP - 200),
-      w: rs, h: rs,
-      hp: 999, color: '#555',
+      x: 100 + Math.random() * (MAP - 200), y: 100 + Math.random() * (MAP - 200),
+      w: 18, h: 18, hp: 40, type: 'barrel',
+    });
+  }
+  // Rocks (indestructible, bigger)
+  for (var j = 0; j < 12; j++) {
+    var rs = 35 + Math.random() * 35;
+    obstacles.push({
+      x: 150 + Math.random() * (MAP - 300), y: 150 + Math.random() * (MAP - 300),
+      w: rs, h: rs, hp: 9999, type: 'rock',
+    });
+  }
+  // Bushes (visual cover, no collision - low hp so bullets pass)
+  for (var k = 0; k < 20; k++) {
+    obstacles.push({
+      x: 80 + Math.random() * (MAP - 160), y: 80 + Math.random() * (MAP - 160),
+      w: 30 + Math.random() * 20, h: 30 + Math.random() * 20, hp: 1, type: 'bush',
     });
   }
 }
@@ -127,20 +137,55 @@ function startLobby() {
   io.emit('phase', { phase: 'lobby', time: LOBBY_TIME });
 }
 
+function getSpawnPoints(count) {
+  // Distribute players around edges of the map
+  var points = [];
+  var pad = 150;
+  var b = getBounds();
+  var corners = [
+    {x:b.x1+pad, y:b.y1+pad}, {x:b.x2-pad, y:b.y1+pad},
+    {x:b.x2-pad, y:b.y2-pad}, {x:b.x1+pad, y:b.y2-pad},
+    {x:(b.x1+b.x2)/2, y:b.y1+pad}, {x:(b.x1+b.x2)/2, y:b.y2-pad},
+    {x:b.x1+pad, y:(b.y1+b.y2)/2}, {x:b.x2-pad, y:(b.y1+b.y2)/2},
+  ];
+  for (var i = 0; i < count; i++) {
+    points.push(corners[i % corners.length]);
+  }
+  return points;
+}
+
 function startMatch() {
   phase = 'playing'; phaseStart = Date.now();
   mapSize = MAP; lastShrink = Date.now();
   genObstacles(); initLoot(); bullets = [];
-  // Spawn all humans
-  var ids = Object.keys(players);
-  for (var i = 0; i < ids.length; i++) {
-    var old = players[ids[i]];
-    players[ids[i]] = createPlayer(ids[i], old.name, false);
-  }
+  // Collect all human ids
+  var humanIds = Object.keys(players).filter(function(id) { return !players[id].isBot; });
   // Add bots
-  var humans = ids.length;
-  var botsNeeded = Math.max(0, BOT_COUNT - humans + 1);
-  for (var b = 0; b < botsNeeded; b++) createBot();
+  var botsNeeded = Math.max(0, BOT_COUNT - humanIds.length + 1);
+  var botIds = [];
+  for (var b = 0; b < botsNeeded; b++) botIds.push(createBot());
+  // All player ids
+  var allIds = humanIds.concat(botIds);
+  var spawns = getSpawnPoints(allIds.length);
+  // Spawn everyone at spread out positions
+  for (var i = 0; i < allIds.length; i++) {
+    var pid = allIds[i];
+    var old = players[pid];
+    var isBot = old.isBot;
+    players[pid] = createPlayer(pid, old.name, isBot);
+    players[pid].x = spawns[i].x;
+    players[pid].y = spawns[i].y;
+    // Angle facing center
+    players[pid].angle = Math.atan2(mapCenter - spawns[i].y, mapCenter - spawns[i].x);
+    players[pid].aimAngle = players[pid].angle;
+    if (isBot) {
+      var wk = WEAPON_KEYS[Math.floor(Math.random() * WEAPON_KEYS.length)];
+      players[pid].weapon = wk;
+      players[pid].ammo[wk] = WEAPONS[wk].ammo;
+      players[pid].botWander = Math.random() * Math.PI * 2;
+      players[pid].botWanderT = 0;
+    }
+  }
   io.emit('phase', { phase: 'playing', time: MATCH_TIME });
 }
 
@@ -314,7 +359,7 @@ setInterval(function() {
       // Obstacle collision
       var blocked = false;
       for (var oi = 0; oi < obstacles.length; oi++) {
-        if (rectContains(obstacles[oi], nx, ny, PLAYER_R)) { blocked = true; break; }
+        if (obstacles[oi].type !== 'bush' && rectContains(obstacles[oi], nx, ny, PLAYER_R)) { blocked = true; break; }
       }
       if (!blocked) { p.x = nx; p.y = ny; }
     }
@@ -474,7 +519,7 @@ setInterval(function() {
     for (var oi = 0; oi < obstacles.length; oi++) {
       var ob = obstacles[oi];
       if (Math.abs(ob.x + ob.w / 2 - cam.x) < vd + ob.w && Math.abs(ob.y + ob.h / 2 - cam.y) < vd + ob.h) {
-        no.push({ x: Math.round(ob.x), y: Math.round(ob.y), w: Math.round(ob.w), h: Math.round(ob.h), c: ob.color });
+        no.push({ x: Math.round(ob.x), y: Math.round(ob.y), w: Math.round(ob.w), h: Math.round(ob.h), t: ob.type });
       }
     }
 

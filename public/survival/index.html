@@ -156,9 +156,22 @@ setInterval(function(){
 // Network
 socket.on('phase',function(d){
   var ol=document.getElementById('overlay'),t=document.getElementById('olT'),m=document.getElementById('olM');
-  if(d.phase==='lobby'){ol.classList.remove('show');document.getElementById('specBar').style.display='none';}
-  else if(d.phase==='playing'){ol.classList.add('show');t.textContent='SOBREVIVE';t.style.color='#4ADE80';m.textContent='';setTimeout(function(){ol.classList.remove('show');},2000);}
-  else if(d.phase==='ended'){ol.classList.add('show');if(d.winner){t.textContent='GANADOR: '+d.winner.name;t.style.color='#FBBF24';m.textContent=d.winner.kills+' kills';}else{t.textContent='FIN';t.style.color='#F87171';m.textContent='';}}
+  if(d.phase==='lobby'){
+    ol.classList.remove('show');
+    document.getElementById('specBar').style.display='none';
+    dp={};camX=1000;camY=1000; // reset smooth positions
+  } else if(d.phase==='playing'){
+    ol.classList.add('show');t.textContent='SOBREVIVE';t.style.color='#4ADE80';m.textContent='';
+    // Reactivate controls (fixes post-spectate bug)
+    document.getElementById('specBar').style.display='none';
+    if(isTouch){document.getElementById('jMove').style.display='block';document.getElementById('jAim').style.display='block';}
+    playing=true;dp={};
+    setTimeout(function(){ol.classList.remove('show');},2000);
+  } else if(d.phase==='ended'){
+    ol.classList.add('show');
+    if(d.winner){t.textContent='GANADOR: '+d.winner.name;t.style.color='#FBBF24';m.textContent=d.winner.kills+' kills';}
+    else{t.textContent='FIN';t.style.color='#F87171';m.textContent='';}
+  }
 });
 socket.on('dead',function(d){
   document.getElementById('specBar').style.display='block';
@@ -211,10 +224,39 @@ function render(){
 
   // Obstacles
   if(st.o)for(var oi=0;oi<st.o.length;oi++){
-    var ob=st.o[oi];
-    ctx.fillStyle=ob.c==='#555'?'#556':'#5a4030';
-    ctx.fillRect(ob.x+ox,ob.y+oy,ob.w,ob.h);
-    ctx.strokeStyle='rgba(0,0,0,.2)';ctx.lineWidth=1;ctx.strokeRect(ob.x+ox,ob.y+oy,ob.w,ob.h);
+    var ob=st.o[oi],obx=ob.x+ox,oby=ob.y+oy;
+    if(obx+ob.w<-10||obx>W+10||oby+ob.h<-10||oby>H+10)continue;
+    if(ob.t==='bush'){
+      // Green semi-transparent bush
+      ctx.fillStyle='rgba(34,120,34,.45)';
+      ctx.beginPath();ctx.ellipse(obx+ob.w/2,oby+ob.h/2,ob.w/2,ob.h/2,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='rgba(50,160,50,.25)';
+      ctx.beginPath();ctx.ellipse(obx+ob.w/2-3,oby+ob.h/2-3,ob.w/3,ob.h/3,0,0,Math.PI*2);ctx.fill();
+    } else if(ob.t==='rock'){
+      // Dark grey rock with rough look
+      ctx.fillStyle='#4a4a52';
+      ctx.beginPath();ctx.ellipse(obx+ob.w/2,oby+ob.h/2+2,ob.w/2,ob.h/2,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#5a5a65';
+      ctx.beginPath();ctx.ellipse(obx+ob.w/2,oby+ob.h/2,ob.w/2-1,ob.h/2-1,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='rgba(255,255,255,.06)';
+      ctx.beginPath();ctx.ellipse(obx+ob.w/3,oby+ob.h/3,ob.w/4,ob.h/4,0,0,Math.PI*2);ctx.fill();
+    } else if(ob.t==='barrel'){
+      // Red-brown barrel circle
+      ctx.fillStyle='#6b3a2a';
+      ctx.beginPath();ctx.arc(obx+ob.w/2,oby+ob.h/2+1,ob.w/2,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#7d4535';
+      ctx.beginPath();ctx.arc(obx+ob.w/2,oby+ob.h/2,ob.w/2-1,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='rgba(0,0,0,.2)';ctx.lineWidth=1;
+      ctx.beginPath();ctx.arc(obx+ob.w/2,oby+ob.h/2,ob.w/2-1,0,Math.PI*2);ctx.stroke();
+    } else {
+      // Wooden crate
+      ctx.fillStyle='#5a4030';ctx.fillRect(obx,oby,ob.w,ob.h);
+      ctx.strokeStyle='#3d2a1a';ctx.lineWidth=1.5;ctx.strokeRect(obx,oby,ob.w,ob.h);
+      // Cross pattern
+      ctx.strokeStyle='rgba(0,0,0,.15)';ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(obx,oby);ctx.lineTo(obx+ob.w,oby+ob.h);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(obx+ob.w,oby);ctx.lineTo(obx,oby+ob.h);ctx.stroke();
+    }
   }
 
   // Loot
