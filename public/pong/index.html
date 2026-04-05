@@ -76,6 +76,7 @@ var canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
 var isTouch=('ontouchstart' in window)||(navigator.maxTouchPoints>0);
 var socket=io('/pong',{transports:['websocket']});
 var joined=false,state=null,ARENA=800;
+var mySide=null; // 'top','bottom','left','right'
 
 var dpr=window.devicePixelRatio||1;
 var cssSize=100;
@@ -106,20 +107,36 @@ document.getElementById('playBtn').onclick=function(){
 };
 document.getElementById('nameInput').onkeydown=function(e){if(e.key==='Enter')document.getElementById('playBtn').click();};
 
-// Input
+// Input - adapts to side (lateral sides use up/down)
 var inputDir=0;
+function isLateral(){return mySide==='left'||mySide==='right';}
+
 addEventListener('keydown',function(e){
-  if(e.key==='a'||e.key==='A'||e.key==='ArrowLeft')inputDir=-1;
-  if(e.key==='d'||e.key==='D'||e.key==='ArrowRight')inputDir=1;
+  // Horizontal side: A/D or Left/Right
+  // Lateral side: W/S or Up/Down
+  if(isLateral()){
+    if(e.key==='w'||e.key==='W'||e.key==='ArrowUp')inputDir=-1;
+    if(e.key==='s'||e.key==='S'||e.key==='ArrowDown')inputDir=1;
+  } else {
+    if(e.key==='a'||e.key==='A'||e.key==='ArrowLeft')inputDir=-1;
+    if(e.key==='d'||e.key==='D'||e.key==='ArrowRight')inputDir=1;
+  }
+  // Also support both always
+  if(e.key==='a'||e.key==='A'||e.key==='ArrowLeft'||e.key==='w'||e.key==='W'||e.key==='ArrowUp')inputDir=-1;
+  if(e.key==='d'||e.key==='D'||e.key==='ArrowRight'||e.key==='s'||e.key==='S'||e.key==='ArrowDown')inputDir=1;
 });
 addEventListener('keyup',function(e){
-  if(e.key==='a'||e.key==='A'||e.key==='ArrowLeft'){if(inputDir===-1)inputDir=0;}
-  if(e.key==='d'||e.key==='D'||e.key==='ArrowRight'){if(inputDir===1)inputDir=0;}
+  if(e.key==='a'||e.key==='A'||e.key==='ArrowLeft'||e.key==='w'||e.key==='W'||e.key==='ArrowUp'){if(inputDir===-1)inputDir=0;}
+  if(e.key==='d'||e.key==='D'||e.key==='ArrowRight'||e.key==='s'||e.key==='S'||e.key==='ArrowDown'){if(inputDir===1)inputDir=0;}
 });
 
-// Mobile arrow buttons
+// Mobile arrow buttons - icons update based on side
 var btnL=document.getElementById('btnLeft'),btnR=document.getElementById('btnRight');
 var lDown=false,rDown=false;
+function updateArrowIcons(){
+  if(isLateral()){btnL.innerHTML='&#9650;';btnR.innerHTML='&#9660;';}
+  else{btnL.innerHTML='&#9664;';btnR.innerHTML='&#9654;';}
+}
 btnL.addEventListener('touchstart',function(e){e.preventDefault();lDown=true;btnL.classList.add('active');},{passive:false});
 btnL.addEventListener('touchend',function(){lDown=false;btnL.classList.remove('active');});
 btnL.addEventListener('touchcancel',function(){lDown=false;btnL.classList.remove('active');});
@@ -143,7 +160,10 @@ socket.on('phase',function(d){
   else if(d.phase==='ended'){ol.classList.add('show');t.textContent='GANO: '+d.winner;t.style.color=d.color||'#F59E0B';m.textContent='Nueva ronda en 5s...';}
 });
 socket.on('pwmsg',function(d){var el=document.getElementById('pwMsg');el.textContent=d.msg;el.style.color='#A78BFA';el.classList.add('show');setTimeout(function(){el.classList.remove('show');},2000);});
-socket.on('s',function(s){state=s;ARENA=s.arena||800;});
+socket.on('s',function(s){
+  state=s;ARENA=s.arena||800;
+  if(s.mySide&&s.mySide!==mySide){mySide=s.mySide;updateArrowIcons();}
+});
 
 // Scoreboard
 var lastSB='';

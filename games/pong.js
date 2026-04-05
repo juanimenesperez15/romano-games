@@ -464,7 +464,11 @@ setInterval(function() {
     };
   }
 
-  io.volatile.emit('s', state);
+  // Send to each player with their side info
+  for (var sid in players) {
+    state.mySide = players[sid].side || null;
+    io.volatile.to(sid).emit('s', state);
+  }
 }, 1000 / NET_TPS);
 
 // ── Replace a bot with a human player mid-game ──
