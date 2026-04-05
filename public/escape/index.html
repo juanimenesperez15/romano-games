@@ -7,296 +7,322 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Space+Grotesk:wght@600;700;800&display=swap" rel="stylesheet">
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
-    body{background:#0c0c14;font-family:'Outfit',sans-serif;color:#fff;min-height:100vh;overflow-x:hidden;-webkit-user-select:none;user-select:none}
-
-    /* Menu */
+    body{background:#0c0c14;font-family:'Outfit',sans-serif;color:#fff;height:100vh;overflow:hidden;touch-action:manipulation;-webkit-user-select:none;user-select:none}
     #menu{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:100;background:radial-gradient(ellipse,rgba(12,12,20,.97),rgba(6,6,10,.99))}
-    #menu.hidden{display:none}
-    .mbox{text-align:center;padding:36px 42px;border-radius:24px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);max-width:90vw;box-shadow:0 30px 80px rgba(0,0,0,.5)}
-    .mbox h1{font-family:'Space Grotesk',sans-serif;font-size:clamp(22px,5.5vw,36px);font-weight:800;margin-bottom:4px;background:linear-gradient(135deg,#C084FC,#F472B6,#FB923C);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-    .mbox .sub{color:rgba(255,255,255,.2);font-size:9px;letter-spacing:3px;text-transform:uppercase;margin-bottom:24px}
-    #nameInput{display:block;width:220px;max-width:80vw;margin:0 auto 14px;padding:12px 18px;font-family:'Outfit',sans-serif;font-size:15px;font-weight:600;border:1.5px solid rgba(255,255,255,.06);border-radius:14px;background:rgba(255,255,255,.03);color:#fff;text-align:center;outline:none}
-    #nameInput:focus{border-color:rgba(192,132,252,.4)}
-    .pbtn{display:block;width:220px;max-width:80vw;margin:0 auto;padding:13px;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;border:none;border-radius:14px;background:linear-gradient(135deg,#C084FC,#F472B6);color:#0c0c14;cursor:pointer;letter-spacing:.5px}
-    .pbtn:active{transform:scale(.96)}
-    .hint-text{margin-top:14px;color:rgba(255,255,255,.15);font-size:8px;line-height:2.2}
-    #lobbyInfo{margin-top:16px;color:rgba(255,255,255,.3);font-size:12px}
-    #lobbyPlayers{display:flex;gap:8px;justify-content:center;margin-top:8px;flex-wrap:wrap}
-    .lobby-player{padding:4px 12px;border-radius:8px;font-size:11px;font-weight:600}
-    #startBtn{display:none;margin-top:14px}
+    #menu.h{display:none}
+    .mb{text-align:center;padding:28px 34px;border-radius:22px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);max-width:90vw}
+    .mb h1{font-family:'Space Grotesk',sans-serif;font-size:clamp(20px,5vw,32px);font-weight:800;margin-bottom:3px;background:linear-gradient(135deg,#C084FC,#F472B6,#FB923C);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .mb .sub{color:rgba(255,255,255,.2);font-size:9px;letter-spacing:3px;text-transform:uppercase;margin-bottom:20px}
+    #ni{display:block;width:200px;max-width:80vw;margin:0 auto 12px;padding:11px 16px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;border:1.5px solid rgba(255,255,255,.06);border-radius:12px;background:rgba(255,255,255,.03);color:#fff;text-align:center;outline:none}
+    .btn{display:block;width:200px;max-width:80vw;margin:6px auto 0;padding:11px;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;border:none;border-radius:12px;cursor:pointer;letter-spacing:.3px}
+    .btn1{background:linear-gradient(135deg,#C084FC,#F472B6);color:#0c0c14}
+    .btn2{background:rgba(255,255,255,.06);color:rgba(255,255,255,.5)}
+    .ht{margin-top:12px;color:rgba(255,255,255,.12);font-size:8px;line-height:2}
+    #lp{display:flex;gap:6px;justify-content:center;margin:10px 0;flex-wrap:wrap}
+    .lpp{padding:4px 10px;border-radius:8px;font-size:11px;font-weight:600;color:#0c0c14}
+    #li{color:rgba(255,255,255,.25);font-size:11px;margin-bottom:6px}
 
-    /* Game layout */
-    #gameUI{display:none;flex-direction:column;height:100vh;width:100vw}
-    #gameUI.show{display:flex}
+    /* Game */
+    #gm{display:none;height:100vh;flex-direction:column}
+    #gm.s{display:flex}
+    #tb{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(0,0,0,.3);border-bottom:1px solid rgba(255,255,255,.03);flex-shrink:0}
+    #rl{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700}
+    #tl{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:800}
+    #hl{font-size:10px;color:rgba(255,255,255,.3);cursor:pointer;-webkit-tap-highlight-color:transparent}
+    #bb{background:none;border:none;color:rgba(255,255,255,.25);font-size:14px;cursor:pointer;padding:4px}
 
-    /* Top bar */
-    #topBar{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;background:rgba(0,0,0,.3);border-bottom:1px solid rgba(255,255,255,.04);flex-shrink:0}
-    #roomLabel{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:rgba(255,255,255,.6)}
-    #timerLabel{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:800}
-    #hintsLeft{font-size:11px;color:rgba(255,255,255,.35);cursor:pointer}
-    #backBtn2{background:none;border:none;color:rgba(255,255,255,.3);font-size:16px;cursor:pointer;padding:4px 8px}
+    /* Content: puzzle + chat side by side on desktop, stacked on mobile */
+    #ct{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
+    @media(min-width:700px){#ct{flex-direction:row}}
 
-    /* Puzzle area */
-    #puzzleArea{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;overflow-y:auto;min-height:0}
-    #puzzleTitle{font-family:'Space Grotesk',sans-serif;font-size:clamp(18px,4vw,26px);font-weight:800;margin-bottom:6px;color:#C084FC}
-    #puzzleDesc{font-size:13px;color:rgba(255,255,255,.4);margin-bottom:16px;text-align:center;max-width:400px;line-height:1.6}
-    #myClue{background:rgba(192,132,252,.08);border:1px solid rgba(192,132,252,.15);border-radius:14px;padding:14px 20px;margin-bottom:16px;max-width:360px;width:100%;text-align:center}
-    #myClue .clue-label{font-size:9px;text-transform:uppercase;letter-spacing:2px;color:rgba(192,132,252,.5);margin-bottom:6px}
-    #myClue .clue-text{font-size:15px;font-weight:600;color:#E9D5FF;line-height:1.6}
-
-    /* Answer input */
-    #answerBox{display:flex;gap:8px;max-width:360px;width:100%}
-    #answerInput{flex:1;padding:11px 16px;font-family:'Outfit',sans-serif;font-size:15px;font-weight:600;border:1.5px solid rgba(255,255,255,.08);border-radius:12px;background:rgba(255,255,255,.04);color:#fff;outline:none}
-    #answerInput:focus{border-color:rgba(192,132,252,.3)}
-    #answerBtn{padding:11px 20px;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;border:none;border-radius:12px;background:linear-gradient(135deg,#C084FC,#F472B6);color:#0c0c14;cursor:pointer}
-    #answerBtn:active{transform:scale(.95)}
-
-    /* Feedback */
-    #feedback{margin-top:12px;font-size:13px;font-weight:600;min-height:20px}
+    /* Puzzle */
+    #pa{flex:1;display:flex;flex-direction:column;align-items:center;padding:14px;overflow-y:auto;min-height:0}
+    #pt{font-family:'Space Grotesk',sans-serif;font-size:clamp(16px,4vw,22px);font-weight:800;margin-bottom:4px;color:#C084FC}
+    #pd{font-size:12px;color:rgba(255,255,255,.35);margin-bottom:12px;text-align:center;max-width:380px;line-height:1.5}
+    /* Visual puzzle area */
+    #pv{width:100%;max-width:380px;min-height:120px;margin-bottom:12px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center}
+    .pv-item{width:60px;height:60px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer;border:2px solid rgba(255,255,255,.08);transition:all .2s;-webkit-tap-highlight-color:transparent;flex-direction:column}
+    .pv-item:hover{border-color:rgba(192,132,252,.3);transform:scale(1.05)}
+    .pv-item.sel{border-color:#C084FC;background:rgba(192,132,252,.15)}
+    .pv-item .pv-label{font-size:8px;margin-top:2px;color:rgba(255,255,255,.3)}
+    /* Clue box */
+    #mc{background:rgba(192,132,252,.06);border:1px solid rgba(192,132,252,.12);border-radius:12px;padding:12px 16px;margin-bottom:10px;max-width:380px;width:100%;text-align:center}
+    #mc .cl{font-size:8px;text-transform:uppercase;letter-spacing:2px;color:rgba(192,132,252,.4);margin-bottom:4px}
+    #mc .ct2{font-size:13px;font-weight:600;color:#E9D5FF;line-height:1.5;white-space:pre-line}
+    /* Answer */
+    #ab{display:flex;gap:6px;max-width:380px;width:100%}
+    #ai{flex:1;padding:10px 14px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;border:1.5px solid rgba(255,255,255,.06);border-radius:10px;background:rgba(255,255,255,.03);color:#fff;outline:none}
+    #ai:focus{border-color:rgba(192,132,252,.25)}
+    #as{padding:10px 16px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;border:none;border-radius:10px;background:linear-gradient(135deg,#C084FC,#F472B6);color:#0c0c14;cursor:pointer}
+    #fb{margin-top:8px;font-size:12px;font-weight:600;min-height:18px}
 
     /* Chat */
-    #chatArea{flex-shrink:0;border-top:1px solid rgba(255,255,255,.04);background:rgba(0,0,0,.2);display:flex;flex-direction:column;height:160px}
-    #chatMessages{flex:1;overflow-y:auto;padding:8px 12px;display:flex;flex-direction:column;gap:3px}
-    .chat-msg{font-size:12px;line-height:1.4}
-    .chat-msg .name{font-weight:700;margin-right:4px}
-    .chat-system{font-size:11px;color:rgba(192,132,252,.5);font-style:italic}
-    #chatForm{display:flex;gap:6px;padding:8px 12px;border-top:1px solid rgba(255,255,255,.03)}
-    #chatInput{flex:1;padding:9px 14px;font-family:'Outfit',sans-serif;font-size:13px;border:1px solid rgba(255,255,255,.06);border-radius:10px;background:rgba(255,255,255,.03);color:#fff;outline:none}
-    #chatInput:focus{border-color:rgba(192,132,252,.25)}
-    #chatSend{padding:9px 16px;font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;border:none;border-radius:10px;background:rgba(192,132,252,.2);color:#C084FC;cursor:pointer}
+    #ca{flex-shrink:0;height:140px;border-top:1px solid rgba(255,255,255,.03);background:rgba(0,0,0,.2);display:flex;flex-direction:column}
+    @media(min-width:700px){#ca{width:260px;height:auto;border-top:none;border-left:1px solid rgba(255,255,255,.03)}}
+    #cm{flex:1;overflow-y:auto;padding:6px 10px;display:flex;flex-direction:column;gap:2px}
+    .msg{font-size:11px;line-height:1.3}.msg .n{font-weight:700;margin-right:3px}
+    .sys{font-size:10px;color:rgba(192,132,252,.4);font-style:italic}
+    #cf{display:flex;gap:4px;padding:6px 10px;border-top:1px solid rgba(255,255,255,.02)}
+    #ci{flex:1;padding:8px 12px;font-family:'Outfit',sans-serif;font-size:12px;border:1px solid rgba(255,255,255,.04);border-radius:8px;background:rgba(255,255,255,.02);color:#fff;outline:none}
+    #cs{padding:8px 12px;font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;border:none;border-radius:8px;background:rgba(192,132,252,.15);color:#C084FC;cursor:pointer}
 
     /* Overlay */
-    #overlay{display:none;position:fixed;inset:0;z-index:90;background:rgba(6,6,10,.92);backdrop-filter:blur(8px);align-items:center;justify-content:center;text-align:center;flex-direction:column;padding:20px}
-    #overlay.show{display:flex}
-    #overlay h2{font-family:'Space Grotesk',sans-serif;font-size:clamp(22px,5vw,32px);font-weight:800;margin-bottom:8px}
-    #overlay p{color:rgba(255,255,255,.4);font-size:14px;line-height:1.6}
-    #overlay .pbtn{margin-top:20px}
-
-    /* Solved animation */
-    @keyframes solvedPulse{0%{transform:scale(1)}50%{transform:scale(1.05)}100%{transform:scale(1)}}
-    .solved-anim{animation:solvedPulse .5s ease}
-
-    /* Responsive */
-    @media(max-width:500px){
-      #chatArea{height:130px}
-      .mbox{padding:26px 24px}
-    }
-    @media(min-width:768px){
-      #gameUI.show{flex-direction:row;flex-wrap:wrap}
-      #topBar{width:100%}
-      #puzzleArea{flex:1;min-width:0}
-      #chatArea{width:280px;height:auto;border-top:none;border-left:1px solid rgba(255,255,255,.04)}
-    }
+    #ol{display:none;position:fixed;inset:0;z-index:90;background:rgba(6,6,10,.93);backdrop-filter:blur(6px);align-items:center;justify-content:center;text-align:center;flex-direction:column;padding:20px}
+    #ol.s{display:flex}
+    #ol h2{font-family:'Space Grotesk',sans-serif;font-size:clamp(20px,5vw,28px);font-weight:800;margin-bottom:6px}
+    #ol p{color:rgba(255,255,255,.35);font-size:13px;line-height:1.6}
   </style>
 </head>
 <body>
-
-<div id="menu"><div class="mbox">
+<div id="menu"><div class="mb">
   <h1>Escape Room de Romano</h1>
   <div class="sub">cooperativo &middot; 2-4 jugadores</div>
-  <input type="text" id="nameInput" placeholder="Tu nombre..." maxlength="12" autofocus value="Romano">
-  <button class="pbtn" id="joinBtn">UNIRSE</button>
-  <div id="lobbyInfo"></div>
-  <div id="lobbyPlayers"></div>
-  <button class="pbtn" id="startBtn">EMPEZAR</button>
-  <div class="hint-text">Resuelvan puzzles juntos &middot; Cada uno ve pistas diferentes<br>Usen el chat para comunicarse &middot; 3 salas tematicas</div>
+  <input type="text" id="ni" placeholder="Tu nombre..." maxlength="12" autofocus value="Romano">
+  <button class="btn btn1" id="jb">UNIRSE</button>
+  <div id="li"></div>
+  <div id="lp"></div>
+  <button class="btn btn2" id="sb" style="display:none">EMPEZAR</button>
+  <div class="ht">Cada uno ve pistas diferentes &middot; Usen el chat<br>3 salas &middot; 5 minutos cada una</div>
 </div></div>
 
-<div id="gameUI">
-  <div id="topBar">
-    <button id="backBtn2" onclick="location.href='/'">&#8592;</button>
-    <div id="roomLabel">Sala 1: Laboratorio</div>
-    <div id="timerLabel" style="color:#C084FC">5:00</div>
-    <div id="hintsLeft" onclick="requestHint()">💡 3 pistas</div>
+<div id="gm">
+  <div id="tb">
+    <button id="bb" onclick="location.href='/'">&#8592;</button>
+    <div id="rl">Sala 1</div>
+    <div id="tl" style="color:#C084FC">5:00</div>
+    <div id="hl" onclick="socket.emit('hint')">💡 3</div>
   </div>
-
-  <div id="puzzleArea">
-    <div id="puzzleTitle">Cargando...</div>
-    <div id="puzzleDesc"></div>
-    <div id="myClue">
-      <div class="clue-label">Tu pista</div>
-      <div class="clue-text" id="clueText">Esperando...</div>
+  <div id="ct">
+    <div id="pa">
+      <div id="pt">Cargando...</div>
+      <div id="pd"></div>
+      <div id="pv"></div>
+      <div id="mc"><div class="cl">Tu pista</div><div class="ct2" id="clue">Esperando...</div></div>
+      <div id="ab">
+        <input type="text" id="ai" placeholder="Respuesta..." maxlength="30" autocomplete="off">
+        <button id="as">ENVIAR</button>
+      </div>
+      <div id="fb"></div>
     </div>
-    <div id="answerBox">
-      <input type="text" id="answerInput" placeholder="Tu respuesta..." maxlength="30" autocomplete="off">
-      <button id="answerBtn" onclick="submitAnswer()">ENVIAR</button>
+    <div id="ca">
+      <div id="cm"></div>
+      <form id="cf" onsubmit="sendChat(event)">
+        <input type="text" id="ci" placeholder="Escribe..." maxlength="100" autocomplete="off">
+        <button type="submit" id="cs">Enviar</button>
+      </form>
     </div>
-    <div id="feedback"></div>
-  </div>
-
-  <div id="chatArea">
-    <div id="chatMessages"></div>
-    <form id="chatForm" onsubmit="sendChat(event)">
-      <input type="text" id="chatInput" placeholder="Escribe..." maxlength="100" autocomplete="off">
-      <button type="submit" id="chatSend">Enviar</button>
-    </form>
   </div>
 </div>
 
-<div id="overlay"><h2 id="olT"></h2><p id="olM"></p></div>
+<div id="ol"><h2 id="ot"></h2><p id="om"></p></div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
 (function(){
-'use strict';
-var socket=io('/escape',{transports:['websocket']});
+var socket=window.socket=io('/escape',{transports:['websocket']});
 var joined=false;
+var ROOMS=['Laboratorio','Mansion Embrujada','Piramide Antigua'];
+var RCOL=['#C084FC','#F472B6','#FB923C'];
+var curRoom=0;
 
-// Menu
-document.getElementById('joinBtn').onclick=function(){
-  socket.emit('join',{name:document.getElementById('nameInput').value.trim()||'Jugador'});
-  joined=true;
-  document.getElementById('joinBtn').style.display='none';
-  document.getElementById('lobbyInfo').textContent='Esperando jugadores...';
-  document.getElementById('startBtn').style.display='block';
+// Puzzle visuals for each type
+var PUZZLE_VISUALS={
+  Codigo:function(d){return makeGrid(['1','2','3','4','5','6','7','8','9','*','0','#'],'#C084FC');},
+  Colores:function(d){return makeColorWires();},
+  Secuencia:function(d){return makeSymbols();},
+  Combinacion:function(d){return makeSafe();},
+  Fantasmas:function(d){return makeCandles();},
+  Llave:function(d){return makeKeys();},
+  Jeroglificos:function(d){return makeHiero();},
+  Trampa:function(d){return makeTrapGrid();},
+  Tesoro:function(d){return makeChest();}
 };
-document.getElementById('nameInput').onkeydown=function(e){if(e.key==='Enter')document.getElementById('joinBtn').click();};
-document.getElementById('startBtn').onclick=function(){socket.emit('start');};
-document.getElementById('answerInput').onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();submitAnswer();}};
 
-// Submit answer
-window.submitAnswer=function(){
-  var inp=document.getElementById('answerInput');
-  var val=inp.value.trim();
-  if(!val)return;
-  socket.emit('answer',{answer:val});
+function makeGrid(items,color){
+  var html='';
+  for(var i=0;i<items.length;i++){
+    html+='<div class="pv-item" style="background:rgba(192,132,252,.06);width:50px;height:50px;font-size:18px" onclick="typeChar(\''+items[i]+'\')">'+items[i]+'</div>';
+  }
+  return html;
+}
+function makeColorWires(){
+  var colors=[{c:'#EF4444',n:'Rojo'},{c:'#3B82F6',n:'Azul'},{c:'#22C55E',n:'Verde'},{c:'#F59E0B',n:'Amarillo'}];
+  var html='';
+  for(var i=0;i<4;i++){
+    html+='<div class="pv-item" style="background:'+colors[i].c+'22;border-color:'+colors[i].c+'44;width:70px;height:70px" onclick="typeChar(\''+colors[i].n+'\')"><div style="width:30px;height:6px;background:'+colors[i].c+';border-radius:3px"></div><div class="pv-label">'+colors[i].n+'</div></div>';
+  }
+  return html;
+}
+function makeSymbols(){
+  var syms=['★','◆','●','▲','■','♦'];
+  var html='';
+  for(var i=0;i<syms.length;i++){
+    html+='<div class="pv-item" style="background:rgba(192,132,252,.06);font-size:22px" onclick="typeChar(\''+syms[i]+'\')">'+syms[i]+'</div>';
+  }
+  return html;
+}
+function makeSafe(){
+  return '<div style="width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.03);border:3px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;flex-direction:column"><div style="font-size:11px;color:rgba(255,255,255,.2);margin-bottom:8px">CAJA FUERTE</div><div style="font-size:28px;font-family:Space Grotesk;font-weight:800;color:rgba(255,255,255,.5);letter-spacing:8px" id="safeDisplay">_ _ _</div></div>';
+}
+function makeCandles(){
+  var html='';
+  for(var i=1;i<=5;i++){
+    html+='<div class="pv-item" style="background:rgba(251,191,36,.06);border-color:rgba(251,191,36,.15);width:50px;height:70px;font-size:26px" onclick="typeChar(\''+i+'\')">🕯️<div class="pv-label">'+i+'</div></div>';
+  }
+  return html;
+}
+function makeKeys(){
+  var html='';
+  var cols=['🔑','🗝️','🔑','🗝️'];
+  for(var i=0;i<4;i++){
+    html+='<div class="pv-item" style="background:rgba(251,191,36,.06);font-size:22px" onclick="typeChar(\''+(i+1)+'\')">'+cols[i%2]+'<div class="pv-label">Llave '+(i+1)+'</div></div>';
+  }
+  return html;
+}
+function makeHiero(){
+  var syms=['𓂀','𓃭','𓆣','𓇳'];
+  var html='';
+  for(var i=0;i<syms.length;i++){
+    html+='<div class="pv-item" style="background:rgba(251,146,60,.06);border-color:rgba(251,146,60,.15);font-size:28px" onclick="typeChar(\''+syms[i]+'\')">'+syms[i]+'</div>';
+  }
+  return html;
+}
+function makeTrapGrid(){
+  var html='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px">';
+  for(var r=0;r<4;r++){
+    for(var c=0;c<4;c++){
+      var id=String.fromCharCode(65+r)+(c+1);
+      html+='<div class="pv-item" style="background:rgba(251,146,60,.04);width:48px;height:48px;font-size:10px;font-weight:700" onclick="typeChar(\''+id+'\')">'+id+'</div>';
+    }
+  }
+  html+='</div>';
+  return html;
+}
+function makeChest(){
+  return '<div style="text-align:center"><div style="font-size:64px;margin-bottom:8px">🏆</div><div style="font-size:11px;color:rgba(255,255,255,.25)">Ingresa el codigo final</div></div>';
+}
+
+window.typeChar=function(ch){
+  var inp=document.getElementById('ai');
+  inp.value+=ch;
+  inp.focus();
+};
+
+// Join
+document.getElementById('jb').onclick=function(){
+  socket.emit('join',{name:document.getElementById('ni').value.trim()||'Jugador'});
+  joined=true;this.style.display='none';
+  document.getElementById('li').textContent='Conectado!';
+  document.getElementById('sb').style.display='block';
+};
+document.getElementById('ni').onkeydown=function(e){if(e.key==='Enter')document.getElementById('jb').click();};
+document.getElementById('sb').onclick=function(){socket.emit('start');};
+document.getElementById('ai').onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();submitAns();}};
+document.getElementById('as').onclick=function(){submitAns();};
+
+function submitAns(){
+  var inp=document.getElementById('ai'),v=inp.value.trim();
+  if(!v)return;
+  socket.emit('answer',{answer:v});
   inp.value='';
-};
-
-// Chat
+}
 window.sendChat=function(e){
   e.preventDefault();
-  var inp=document.getElementById('chatInput');
-  var msg=inp.value.trim();
-  if(!msg)return;
-  socket.emit('chat',{msg:msg});
+  var inp=document.getElementById('ci'),m=inp.value.trim();
+  if(!m)return;
+  socket.emit('chat',{msg:m});
   inp.value='';
 };
 
-// Hint
-window.requestHint=function(){socket.emit('hint');};
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
-// State
-var ROOM_NAMES=['Laboratorio','Mansion Embrujada','Piramide Antigua'];
-var ROOM_COLORS=['#C084FC','#F472B6','#FB923C'];
+function addMsg(name,color,msg){
+  var el=document.createElement('div');el.className='msg';
+  el.innerHTML='<span class="n" style="color:'+color+'">'+esc(name)+':</span>'+esc(msg);
+  document.getElementById('cm').appendChild(el);
+  document.getElementById('cm').scrollTop=999999;
+}
+function addSys(t){
+  var el=document.createElement('div');el.className='sys';el.textContent=t;
+  document.getElementById('cm').appendChild(el);
+  document.getElementById('cm').scrollTop=999999;
+}
 
-// State handles both lobby and playing
+// ── Socket events ──
 socket.on('state',function(d){
   if(d.phase==='lobby'){
-    // Update lobby players
-    var lp=document.getElementById('lobbyPlayers');
-    lp.innerHTML='';
+    var lp=document.getElementById('lp');lp.innerHTML='';
     for(var i=0;i<d.players.length;i++){
       var p=d.players[i];
-      var el=document.createElement('div');
-      el.className='lobby-player';
-      el.style.background=p.color;el.style.color='#0c0c14';
-      el.textContent=p.name;
+      var el=document.createElement('div');el.className='lpp';
+      el.style.background=p.color;el.textContent=p.name;
       lp.appendChild(el);
     }
-    document.getElementById('lobbyInfo').textContent='Jugadores: '+d.players.length+'/4';
+    document.getElementById('li').textContent='Jugadores: '+d.players.length+'/4';
   } else if(d.phase==='playing'){
-    // Show game UI if not visible
-    if(!document.getElementById('gameUI').classList.contains('show')){
-      document.getElementById('menu').classList.add('hidden');
-      document.getElementById('gameUI').classList.add('show');
+    if(!document.getElementById('gm').classList.contains('s')){
+      document.getElementById('menu').classList.add('h');
+      document.getElementById('gm').classList.add('s');
     }
-    // Timer
+    curRoom=d.currentRoom||0;
     var m=Math.floor(d.timer/60),s=d.timer%60;
-    var tl=document.getElementById('timerLabel');
+    var tl=document.getElementById('tl');
     tl.textContent=m+':'+(s<10?'0':'')+s;
-    tl.style.color=d.timer<30?'#F87171':(d.timer<60?'#FBBF24':ROOM_COLORS[d.currentRoom||0]);
-    document.getElementById('hintsLeft').textContent='💡 '+d.hintsLeft+' pistas';
-    document.getElementById('roomLabel').textContent='Sala '+(d.currentRoom+1)+': '+ROOM_NAMES[d.currentRoom];
-    document.getElementById('roomLabel').style.color=ROOM_COLORS[d.currentRoom];
+    tl.style.color=d.timer<30?'#F87171':(d.timer<60?'#FBBF24':RCOL[curRoom]);
+    document.getElementById('hl').textContent='💡 '+(d.hintsLeft||0);
+    document.getElementById('rl').textContent='Sala '+(curRoom+1)+': '+ROOMS[curRoom];
+    document.getElementById('rl').style.color=RCOL[curRoom];
   }
 });
 
 socket.on('puzzle',function(d){
-  // d.room can be string name or number
-  var roomIdx=typeof d.room==='number'?d.room:ROOM_NAMES.indexOf(d.room);
-  if(roomIdx<0)roomIdx=0;
-  document.getElementById('roomLabel').textContent='Sala '+(roomIdx+1)+': '+ROOM_NAMES[roomIdx];
-  document.getElementById('roomLabel').style.color=ROOM_COLORS[roomIdx];
-  document.getElementById('puzzleTitle').textContent=d.puzzleName||d.title||'Puzzle';
-  document.getElementById('puzzleTitle').style.color=ROOM_COLORS[roomIdx];
-  document.getElementById('puzzleDesc').textContent=d.description||d.desc||'';
-  // Clues can be array or string
-  var clueStr=d.clue||'';
-  if(d.clues){clueStr=Array.isArray(d.clues)?d.clues.join('\n'):d.clues;}
-  document.getElementById('clueText').textContent=clueStr;
-  document.getElementById('feedback').textContent='';
-  document.getElementById('feedback').style.color='';
-  document.getElementById('answerInput').value='';
-  document.getElementById('answerInput').focus();
-  // Animate
-  document.getElementById('myClue').classList.remove('solved-anim');
-  void document.getElementById('myClue').offsetWidth;
-  document.getElementById('myClue').classList.add('solved-anim');
+  var ri=typeof d.room==='number'?d.room:ROOMS.indexOf(d.room);
+  if(ri<0)ri=0;curRoom=ri;
+  var pn=d.puzzleName||d.title||'Puzzle';
+  document.getElementById('pt').textContent=pn;
+  document.getElementById('pt').style.color=RCOL[ri];
+  document.getElementById('pd').textContent=d.description||'';
+  // Clues
+  var clue=d.clue||'';
+  if(d.clues){clue=Array.isArray(d.clues)?d.clues.join('\n'):String(d.clues);}
+  document.getElementById('clue').textContent=clue;
+  // Visual puzzle
+  var pv=document.getElementById('pv');
+  var vizFn=PUZZLE_VISUALS[pn];
+  pv.innerHTML=vizFn?vizFn(d):'';
+  // Reset
+  document.getElementById('fb').textContent='';
+  document.getElementById('ai').value='';
 });
 
-// (state handled above)
-
+socket.on('chat',function(d){addMsg(d.name,d.color,d.msg);});
 socket.on('wrong',function(d){
-  var fb=document.getElementById('feedback');
-  fb.textContent=d.msg||'Incorrecto, sigan intentando!';
-  fb.style.color='#F87171';
+  document.getElementById('fb').textContent=d.msg||'Incorrecto!';
+  document.getElementById('fb').style.color='#F87171';
 });
-
 socket.on('solved',function(d){
-  var fb=document.getElementById('feedback');
-  fb.textContent='Puzzle resuelto!';
-  fb.style.color='#4ADE80';
-  addSystemMsg('Puzzle resuelto! '+(d.msg||''));
+  document.getElementById('fb').textContent='Puzzle resuelto!';
+  document.getElementById('fb').style.color='#4ADE80';
+  addSys('Puzzle resuelto!');
 });
-
 socket.on('roomComplete',function(d){
-  addSystemMsg('Sala completada! Tiempo restante: '+d.timeLeft+'s');
-  var ol=document.getElementById('overlay'),t=document.getElementById('olT'),m=document.getElementById('olM');
-  ol.classList.add('show');
-  t.textContent='SALA COMPLETADA';t.style.color='#4ADE80';
-  m.textContent='Siguiente: '+ROOM_NAMES[d.nextRoom]+'...';
-  setTimeout(function(){ol.classList.remove('show');},2500);
+  addSys('Sala completada!');
+  var ol=document.getElementById('ol'),t=document.getElementById('ot'),m=document.getElementById('om');
+  ol.classList.add('s');t.textContent='SALA COMPLETADA';t.style.color='#4ADE80';
+  m.textContent='Siguiente: '+ROOMS[d.nextRoom||0];
+  setTimeout(function(){ol.classList.remove('s');},2500);
 });
-
 socket.on('gameOver',function(d){
-  var ol=document.getElementById('overlay'),t=document.getElementById('olT'),m=document.getElementById('olM');
-  ol.classList.add('show');
-  if(d.win){
-    t.textContent='ESCAPARON!';t.style.color='#4ADE80';
-    m.innerHTML='Tiempo total: '+d.totalTime+'s<br>Felicitaciones!';
-  } else {
-    t.textContent='TIEMPO AGOTADO';t.style.color='#F87171';
-    m.textContent='No lograron escapar. Intenten de nuevo!';
-  }
-  m.innerHTML+='<br><br><a href="/escape" style="color:#C084FC">Jugar de nuevo</a>';
+  var ol=document.getElementById('ol'),t=document.getElementById('ot'),m=document.getElementById('om');
+  ol.classList.add('s');
+  if(d.win){t.textContent='ESCAPARON!';t.style.color='#4ADE80';m.innerHTML='Felicitaciones!<br><br><a href="/escape" style="color:#C084FC">Jugar de nuevo</a>';}
+  else{t.textContent='TIEMPO AGOTADO';t.style.color='#F87171';m.innerHTML='Intenten de nuevo<br><br><a href="/escape" style="color:#C084FC">Reintentar</a>';}
 });
-
 socket.on('hint',function(d){
-  addSystemMsg('PISTA: '+d.text);
-  document.getElementById('clueText').textContent=d.text;
+  addSys('PISTA: '+d.text);
+  document.getElementById('clue').textContent=d.text;
 });
-
-socket.on('chat',function(d){
-  var msgs=document.getElementById('chatMessages');
-  var div=document.createElement('div');
-  div.className='chat-msg';
-  div.innerHTML='<span class="name" style="color:'+d.color+'">'+d.name+':</span>'+escapeHtml(d.msg);
-  msgs.appendChild(div);
-  msgs.scrollTop=msgs.scrollHeight;
-});
-
-function addSystemMsg(text){
-  var msgs=document.getElementById('chatMessages');
-  var div=document.createElement('div');
-  div.className='chat-system';
-  div.textContent=text;
-  msgs.appendChild(div);
-  msgs.scrollTop=msgs.scrollHeight;
-}
-
-function escapeHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-
+socket.on('error',function(d){addSys('Error: '+(d.msg||''));});
 })();
 </script>
 </body>
