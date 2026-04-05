@@ -3,12 +3,12 @@ module.exports = function(io) {
 // ── Config ──
 var TPS = 60, NET_TPS = 30;
 var MAP = 2000;
-var PLAYER_R = 14, PLAYER_SPEED = 2.8, PLAYER_HP = 100;
+var PLAYER_R = 14, PLAYER_SPEED = 2.8, PLAYER_HP = 100, BOT_HP = 50;
 var LOBBY_TIME = 20, MATCH_TIME = 180; // 3 min match
 var SHRINK_INTERVAL = 25;
 var MAP_MIN = 400;
 var LOOT_COUNT = 60;
-var BOT_COUNT = 5;
+var BOT_COUNT = 10;
 var botIdCounter = 0;
 
 var WEAPONS = {
@@ -110,9 +110,11 @@ function createPlayer(id, name, isBot) {
 
 function createBot() {
   var id = 'bot_' + (++botIdCounter);
-  var p = createPlayer(id, 'Bot ' + botIdCounter, true);
-  // Give bots a random weapon
-  var wk = WEAPON_KEYS[Math.floor(Math.random() * WEAPON_KEYS.length)];
+  var names = ['Zombie','Walker','Muerto','Infectado','Podrido','Hambriento','Mordedor','Rancio','Cadaver','Errante'];
+  var p = createPlayer(id, names[botIdCounter % names.length], true);
+  p.hp = BOT_HP; p.maxHp = BOT_HP; // Bots have less HP
+  p.speed = PLAYER_SPEED * 0.7; // Bots are slower
+  var wk = WEAPON_KEYS[Math.floor(Math.random() * 2)]; // Only pistol or shotgun
   p.weapon = wk;
   p.ammo[wk] = WEAPONS[wk].ammo;
   p.botTarget = null;
@@ -142,12 +144,14 @@ function getSpawnPoints(count) {
   var points = [];
   var pad = 150;
   var b = getBounds();
-  var corners = [
-    {x:b.x1+pad, y:b.y1+pad}, {x:b.x2-pad, y:b.y1+pad},
-    {x:b.x2-pad, y:b.y2-pad}, {x:b.x1+pad, y:b.y2-pad},
-    {x:(b.x1+b.x2)/2, y:b.y1+pad}, {x:(b.x1+b.x2)/2, y:b.y2-pad},
-    {x:b.x1+pad, y:(b.y1+b.y2)/2}, {x:b.x2-pad, y:(b.y1+b.y2)/2},
-  ];
+  var cx=(b.x1+b.x2)/2,cy=(b.y1+b.y2)/2;
+  var corners = [];
+  // Distribute evenly in a circle
+  for (var ci=0;ci<count;ci++){
+    var ang=(ci/count)*Math.PI*2;
+    var r=mapSize*0.35;
+    corners.push({x:cx+Math.cos(ang)*r, y:cy+Math.sin(ang)*r});
+  }
   for (var i = 0; i < count; i++) {
     points.push(corners[i % corners.length]);
   }
@@ -247,9 +251,11 @@ function updateBots() {
       } else {
         p.moveDir = null;
       }
-      // Shoot if in range and has ammo
-      if (nearDist < wep.range * 0.8) {
+      // Shoot if in range - bots miss often
+      if (nearDist < wep.range * 0.5 && Math.random() > 0.3) {
         p.shooting = true;
+        // Bots have bad aim
+        p.aimAngle += (Math.random() - 0.5) * 0.3;
       } else {
         p.shooting = false;
       }

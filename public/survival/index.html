@@ -208,46 +208,23 @@ function render(){
   ctx.fillRect(0,0,W,zy);ctx.fillRect(0,zy+zh,W,H-zy-zh);ctx.fillRect(0,zy,zx,zh);ctx.fillRect(zx+zw,zy,W-zx-zw,zh);
   ctx.strokeStyle='rgba(239,68,68,.7)';ctx.lineWidth=2;ctx.strokeRect(zx,zy,zw,zh);
 
-  // Obstacles
+  // Obstacles (simplified for perf)
   if(st.o)for(var oi=0;oi<st.o.length;oi++){
     var ob=st.o[oi],obx=ob.x+ox,oby=ob.y+oy;
     if(obx+ob.w<-10||obx>W+10||oby+ob.h<-10||oby>H+10)continue;
-    // Shadow
-    ctx.fillStyle='rgba(0,0,0,.2)';
-    if(ob.t==='bush'){ctx.beginPath();ctx.ellipse(obx+ob.w/2+2,oby+ob.h/2+3,ob.w/2,ob.h/2*.7,0,0,Math.PI*2);ctx.fill();}
-    else if(ob.t==='rock'||ob.t==='barrel'){ctx.beginPath();ctx.ellipse(obx+ob.w/2+2,oby+ob.h/2+3,ob.w/2,ob.h/2*.7,0,0,Math.PI*2);ctx.fill();}
-    else{ctx.fillRect(obx+3,oby+3,ob.w,ob.h);}
-
     if(ob.t==='bush'){
-      ctx.fillStyle='rgba(30,100,30,.5)';ctx.beginPath();ctx.ellipse(obx+ob.w/2,oby+ob.h/2,ob.w/2,ob.h/2,0,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='rgba(50,140,50,.3)';ctx.beginPath();ctx.ellipse(obx+ob.w/2-2,oby+ob.h/2-2,ob.w/3,ob.h/3,0,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='rgba(80,180,80,.15)';ctx.beginPath();ctx.ellipse(obx+ob.w/3,oby+ob.h/3,ob.w/5,ob.h/5,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='rgba(30,100,30,.45)';ctx.beginPath();ctx.ellipse(obx+ob.w/2,oby+ob.h/2,ob.w/2,ob.h/2,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='rgba(50,140,50,.2)';ctx.beginPath();ctx.ellipse(obx+ob.w/2,oby+ob.h/2,ob.w/3,ob.h/3,0,0,Math.PI*2);ctx.fill();
     } else if(ob.t==='rock'){
       ctx.fillStyle='#3d3d45';ctx.beginPath();ctx.ellipse(obx+ob.w/2,oby+ob.h/2,ob.w/2,ob.h/2,0,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#4d4d58';ctx.beginPath();ctx.ellipse(obx+ob.w/2,oby+ob.h/2-1,ob.w/2-2,ob.h/2-2,0,0,Math.PI*2);ctx.fill();
-      // Highlight
-      ctx.fillStyle='rgba(255,255,255,.07)';ctx.beginPath();ctx.ellipse(obx+ob.w*.35,oby+ob.h*.3,ob.w*.2,ob.h*.15,-.3,0,Math.PI*2);ctx.fill();
-      // Cracks
-      ctx.strokeStyle='rgba(0,0,0,.15)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(obx+ob.w*.3,oby+ob.h*.5);ctx.lineTo(obx+ob.w*.6,oby+ob.h*.4);ctx.stroke();
+      ctx.fillStyle='rgba(255,255,255,.05)';ctx.beginPath();ctx.ellipse(obx+ob.w*.35,oby+ob.h*.35,ob.w*.18,ob.h*.13,0,0,Math.PI*2);ctx.fill();
     } else if(ob.t==='barrel'){
-      ctx.fillStyle='#5a2a1a';ctx.beginPath();ctx.arc(obx+ob.w/2,oby+ob.h/2,ob.w/2,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#703828';ctx.beginPath();ctx.arc(obx+ob.w/2,oby+ob.h/2-1,ob.w/2-2,0,Math.PI*2);ctx.fill();
-      ctx.strokeStyle='rgba(0,0,0,.25)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(obx+ob.w/2,oby+ob.h/2,ob.w/2-1,0,Math.PI*2);ctx.stroke();
-      // Metal ring
-      ctx.strokeStyle='rgba(200,200,200,.12)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(obx+ob.w/2,oby+ob.h/2,ob.w/3,0,Math.PI*2);ctx.stroke();
+      ctx.fillStyle='#6a3020';ctx.beginPath();ctx.arc(obx+ob.w/2,oby+ob.h/2,ob.w/2,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='rgba(200,200,200,.1)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(obx+ob.w/2,oby+ob.h/2,ob.w/3,0,Math.PI*2);ctx.stroke();
     } else {
-      // Crate
       ctx.fillStyle='#5a4030';ctx.fillRect(obx,oby,ob.w,ob.h);
-      ctx.fillStyle='#4a3525';ctx.fillRect(obx+2,oby+2,ob.w-4,ob.h-4);
-      ctx.strokeStyle='#3a2515';ctx.lineWidth=1.5;ctx.strokeRect(obx,oby,ob.w,ob.h);
-      // Planks
-      ctx.strokeStyle='rgba(0,0,0,.1)';ctx.lineWidth=1;
-      ctx.beginPath();ctx.moveTo(obx,oby+ob.h/2);ctx.lineTo(obx+ob.w,oby+ob.h/2);ctx.stroke();
-      ctx.beginPath();ctx.moveTo(obx+ob.w/2,oby);ctx.lineTo(obx+ob.w/2,oby+ob.h);ctx.stroke();
-      // Nails
-      ctx.fillStyle='rgba(200,200,200,.15)';
-      ctx.fillRect(obx+3,oby+3,2,2);ctx.fillRect(obx+ob.w-5,oby+3,2,2);
-      ctx.fillRect(obx+3,oby+ob.h-5,2,2);ctx.fillRect(obx+ob.w-5,oby+ob.h-5,2,2);
+      ctx.strokeStyle='#3a2515';ctx.lineWidth=1;ctx.strokeRect(obx,oby,ob.w,ob.h);
+      ctx.strokeStyle='rgba(0,0,0,.08)';ctx.beginPath();ctx.moveTo(obx,oby+ob.h/2);ctx.lineTo(obx+ob.w,oby+ob.h/2);ctx.stroke();
     }
   }
 
@@ -255,93 +232,89 @@ function render(){
   if(st.l)for(var li=0;li<st.l.length;li++){
     var lo=st.l[li],lx=lo.x+ox,ly=lo.y+oy;
     if(lx<-20||lx>W+20||ly<-20||ly>H+20)continue;
-    var t=Date.now()*.003;
-    var bob=Math.sin(t+li)*2;
-    // Glow
-    ctx.beginPath();ctx.arc(lx,ly+bob,14,0,Math.PI*2);ctx.fillStyle=LCOL[lo.t]||'#fff';ctx.globalAlpha=.08;ctx.fill();
-    ctx.beginPath();ctx.arc(lx,ly+bob,9,0,Math.PI*2);ctx.fillStyle=LCOL[lo.t]||'#fff';ctx.globalAlpha=.2;ctx.fill();
-    // Bg circle
-    ctx.beginPath();ctx.arc(lx,ly+bob,8,0,Math.PI*2);ctx.fillStyle='rgba(0,0,0,.4)';ctx.globalAlpha=1;ctx.fill();
-    // Icon
-    ctx.font='11px serif';ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillText(LICO[lo.t]||'?',lx,ly+bob);ctx.textBaseline='alphabetic';
-    ctx.globalAlpha=1;
+    ctx.beginPath();ctx.arc(lx,ly,9,0,Math.PI*2);ctx.fillStyle=LCOL[lo.t]||'#fff';ctx.globalAlpha=.15;ctx.fill();
+    ctx.beginPath();ctx.arc(lx,ly,7,0,Math.PI*2);ctx.fillStyle='rgba(0,0,0,.35)';ctx.globalAlpha=1;ctx.fill();
+    ctx.font='10px serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(LICO[lo.t]||'?',lx,ly);ctx.textBaseline='alphabetic';
   }
 
-  // Players - humans and zombies
+  // Players - humans and zombies (rotated to face aim direction)
   if(st.p)for(var pi=0;pi<st.p.length;pi++){
     var pl=st.p[pi],k=pl.n+'_'+pi;
-    if(!dp[k])dp[k]={x:pl.x,y:pl.y};
+    if(!dp[k])dp[k]={x:pl.x,y:pl.y,a:pl.a};
     dp[k].x+=(pl.x-dp[k].x)*SM;dp[k].y+=(pl.y-dp[k].y)*SM;
-    var px=dp[k].x+ox,py=dp[k].y+oy;
+    // Smooth angle
+    var da=pl.a-dp[k].a;while(da>Math.PI)da-=Math.PI*2;while(da<-Math.PI)da+=Math.PI*2;
+    dp[k].a+=da*SM;
+    var px=dp[k].x+ox,py=dp[k].y+oy,ga=dp[k].a;
     if(px<-40||px>W+40||py<-40||py>H+40)continue;
     var isMe=!!pl.me,isBot=!!pl.bot;
-    var ga=pl.a;
-
-    // Shadow
-    ctx.beginPath();ctx.ellipse(px,py+5,11,6,0,0,Math.PI*2);ctx.fillStyle='rgba(0,0,0,.25)';ctx.fill();
-
-    // ── Body (torso) ──
-    var skinCol=isBot?'#5a7a5a':'#e8c8a0'; // zombie green vs human skin
+    var skinCol=isBot?'#5a7a5a':'#e8c8a0';
     var shirtCol=isMe?'#2d6b3e':(isBot?'#3a4a3a':'#3a5a8a');
+
+    // Shadow (not rotated)
+    ctx.beginPath();ctx.ellipse(px,py+4,10,5,0,0,Math.PI*2);ctx.fillStyle='rgba(0,0,0,.2)';ctx.fill();
+
+    // Rotate entire character to face aim
+    ctx.save();
+    ctx.translate(px,py);
+    ctx.rotate(ga+Math.PI/2); // +90deg so "up" on the sprite = forward
+
+    // Legs (2 small ovals behind torso)
+    ctx.fillStyle=isBot?'#3a5a3a':'#4a6a9a';
+    ctx.beginPath();ctx.ellipse(-4,6,3,5,0,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.ellipse(4,6,3,5,0,0,Math.PI*2);ctx.fill();
+
     // Torso
-    ctx.beginPath();ctx.ellipse(px,py,10,12,0,0,Math.PI*2);ctx.fillStyle=shirtCol;ctx.fill();
+    ctx.beginPath();ctx.ellipse(0,0,9,11,0,0,Math.PI*2);ctx.fillStyle=shirtCol;ctx.fill();
+    // Torso highlight
+    ctx.beginPath();ctx.ellipse(-2,-3,4,5,0,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,.06)';ctx.fill();
 
-    // ── Arms (2 circles at sides based on aim) ──
-    var armOff=Math.PI/2.2;
-    for(var ai2=0;ai2<2;ai2++){
-      var side=ai2===0?-1:1;
-      var ax=px+Math.cos(ga+armOff*side)*12,ay=py+Math.sin(ga+armOff*side)*12;
-      ctx.beginPath();ctx.arc(ax,ay,5,0,Math.PI*2);
-      ctx.fillStyle=skinCol;ctx.fill();
-    }
+    // Arms
+    ctx.fillStyle=skinCol;
+    ctx.beginPath();ctx.ellipse(-11,0,4,5,0.2,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.ellipse(11,0,4,5,-0.2,0,Math.PI*2);ctx.fill();
 
-    // ── Gun (from front arm) ──
-    var gx1=px+Math.cos(ga)*14,gy1=py+Math.sin(ga)*14;
-    var gx2=px+Math.cos(ga)*28,gy2=py+Math.sin(ga)*28;
-    ctx.strokeStyle=isBot?'#555':'#444';ctx.lineWidth=4;ctx.lineCap='round';
-    ctx.beginPath();ctx.moveTo(gx1,gy1);ctx.lineTo(gx2,gy2);ctx.stroke();
+    // Gun (pointing forward = up in rotated space = -Y)
+    ctx.strokeStyle=isBot?'#555':'#3a3a3a';ctx.lineWidth=4;ctx.lineCap='round';
+    ctx.beginPath();ctx.moveTo(5,-10);ctx.lineTo(5,-26);ctx.stroke();
     ctx.lineCap='butt';
 
-    // ── Head ──
-    var headY=py-2;
-    ctx.beginPath();ctx.arc(px,headY,8,0,Math.PI*2);ctx.fillStyle=skinCol;ctx.fill();
+    // Head
+    ctx.beginPath();ctx.arc(0,-4,7.5,0,Math.PI*2);ctx.fillStyle=skinCol;ctx.fill();
 
     if(isBot){
-      // Zombie: red eyes, mouth line
-      var eOff=3,eY=headY-1;
-      ctx.beginPath();ctx.arc(px-eOff,eY,2,0,Math.PI*2);ctx.fillStyle='#c00';ctx.fill();
-      ctx.beginPath();ctx.arc(px+eOff,eY,2,0,Math.PI*2);ctx.fillStyle='#c00';ctx.fill();
-      // Mouth
-      ctx.strokeStyle='#3a2a2a';ctx.lineWidth=1.5;
-      ctx.beginPath();ctx.moveTo(px-3,headY+4);ctx.lineTo(px,headY+5);ctx.lineTo(px+3,headY+4);ctx.stroke();
+      // Zombie face
+      ctx.fillStyle='#c00';
+      ctx.beginPath();ctx.arc(-2.5,-5.5,1.8,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(2.5,-5.5,1.8,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='#3a2a2a';ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(-2.5,-1.5);ctx.lineTo(0,-0.5);ctx.lineTo(2.5,-1.5);ctx.stroke();
     } else {
-      // Human: normal eyes, smile
-      var eOff2=3,eY2=headY-1;
-      ctx.beginPath();ctx.arc(px-eOff2,eY2,1.5,0,Math.PI*2);ctx.fillStyle='#333';ctx.fill();
-      ctx.beginPath();ctx.arc(px+eOff2,eY2,1.5,0,Math.PI*2);ctx.fillStyle='#333';ctx.fill();
+      // Human face
+      ctx.fillStyle='#333';
+      ctx.beginPath();ctx.arc(-2.5,-5,1.3,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(2.5,-5,1.3,0,Math.PI*2);ctx.fill();
       // Hair
-      ctx.beginPath();ctx.ellipse(px,headY-6,7,4,0,Math.PI,Math.PI*2);
+      ctx.beginPath();ctx.ellipse(0,-9.5,6.5,3.5,0,Math.PI,Math.PI*2);
       ctx.fillStyle=isMe?'#3a2a1a':'#2a1a0a';ctx.fill();
     }
 
-    // HP bar
-    var bw=30,bh=4,bxx=px-bw/2,byy=py-22;
-    ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(bxx-1,byy-1,bw+2,bh+2);
-    var pct=pl.hp/pl.mhp;
-    ctx.fillStyle=pct>.5?'#4ADE80':pct>.25?'#FBBF24':'#F87171';
-    ctx.fillRect(bxx,byy,bw*pct,bh);
+    ctx.restore(); // end rotation
 
-    // Name
-    ctx.font='600 9px Outfit';ctx.textAlign='center';
-    ctx.fillStyle=isMe?'rgba(74,222,128,.7)':(isBot?'rgba(255,100,100,.5)':'rgba(255,255,255,.45)');
-    ctx.fillText(pl.n,px,py-26);
+    // HP bar (not rotated, above player)
+    var bw2=28,bh2=4,bxx2=px-bw2/2,byy2=py-20;
+    ctx.fillStyle='rgba(0,0,0,.45)';ctx.fillRect(bxx2-1,byy2-1,bw2+2,bh2+2);
+    var pct2=pl.hp/pl.mhp;
+    ctx.fillStyle=pct2>.5?'#4ADE80':pct2>.25?'#FBBF24':'#F87171';
+    ctx.fillRect(bxx2,byy2,bw2*pct2,bh2);
 
-    // Me indicator
-    if(isMe){
-      ctx.beginPath();ctx.moveTo(px,py-32);ctx.lineTo(px-4,py-28);ctx.lineTo(px+4,py-28);ctx.closePath();
-      ctx.fillStyle='rgba(74,222,128,.5)';ctx.fill();
-    }
+    // Name (not rotated)
+    ctx.font='600 8px Outfit';ctx.textAlign='center';
+    ctx.fillStyle=isMe?'rgba(74,222,128,.65)':(isBot?'rgba(255,100,100,.45)':'rgba(255,255,255,.4)');
+    ctx.fillText(pl.n,px,py-24);
+
+    if(isMe){ctx.beginPath();ctx.moveTo(px,py-30);ctx.lineTo(px-3,py-27);ctx.lineTo(px+3,py-27);ctx.closePath();ctx.fillStyle='rgba(74,222,128,.45)';ctx.fill();}
   }
 
   // Bullets
