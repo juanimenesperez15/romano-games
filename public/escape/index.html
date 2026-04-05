@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+  <title>Escape Room de Romano</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Space+Grotesk:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{background:#0c0c14;font-family:'Outfit',sans-serif;color:#fff;min-height:100vh;overflow-x:hidden;-webkit-user-select:none;user-select:none}
+
+    /* Menu */
+    #menu{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:100;background:radial-gradient(ellipse,rgba(12,12,20,.97),rgba(6,6,10,.99))}
+    #menu.hidden{display:none}
+    .mbox{text-align:center;padding:36px 42px;border-radius:24px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);max-width:90vw;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+    .mbox h1{font-family:'Space Grotesk',sans-serif;font-size:clamp(22px,5.5vw,36px);font-weight:800;margin-bottom:4px;background:linear-gradient(135deg,#C084FC,#F472B6,#FB923C);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .mbox .sub{color:rgba(255,255,255,.2);font-size:9px;letter-spacing:3px;text-transform:uppercase;margin-bottom:24px}
+    #nameInput{display:block;width:220px;max-width:80vw;margin:0 auto 14px;padding:12px 18px;font-family:'Outfit',sans-serif;font-size:15px;font-weight:600;border:1.5px solid rgba(255,255,255,.06);border-radius:14px;background:rgba(255,255,255,.03);color:#fff;text-align:center;outline:none}
+    #nameInput:focus{border-color:rgba(192,132,252,.4)}
+    .pbtn{display:block;width:220px;max-width:80vw;margin:0 auto;padding:13px;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;border:none;border-radius:14px;background:linear-gradient(135deg,#C084FC,#F472B6);color:#0c0c14;cursor:pointer;letter-spacing:.5px}
+    .pbtn:active{transform:scale(.96)}
+    .hint-text{margin-top:14px;color:rgba(255,255,255,.15);font-size:8px;line-height:2.2}
+    #lobbyInfo{margin-top:16px;color:rgba(255,255,255,.3);font-size:12px}
+    #lobbyPlayers{display:flex;gap:8px;justify-content:center;margin-top:8px;flex-wrap:wrap}
+    .lobby-player{padding:4px 12px;border-radius:8px;font-size:11px;font-weight:600}
+    #startBtn{display:none;margin-top:14px}
+
+    /* Game layout */
+    #gameUI{display:none;flex-direction:column;height:100vh;width:100vw}
+    #gameUI.show{display:flex}
+
+    /* Top bar */
+    #topBar{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;background:rgba(0,0,0,.3);border-bottom:1px solid rgba(255,255,255,.04);flex-shrink:0}
+    #roomLabel{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:rgba(255,255,255,.6)}
+    #timerLabel{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:800}
+    #hintsLeft{font-size:11px;color:rgba(255,255,255,.35);cursor:pointer}
+    #backBtn2{background:none;border:none;color:rgba(255,255,255,.3);font-size:16px;cursor:pointer;padding:4px 8px}
+
+    /* Puzzle area */
+    #puzzleArea{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;overflow-y:auto;min-height:0}
+    #puzzleTitle{font-family:'Space Grotesk',sans-serif;font-size:clamp(18px,4vw,26px);font-weight:800;margin-bottom:6px;color:#C084FC}
+    #puzzleDesc{font-size:13px;color:rgba(255,255,255,.4);margin-bottom:16px;text-align:center;max-width:400px;line-height:1.6}
+    #myClue{background:rgba(192,132,252,.08);border:1px solid rgba(192,132,252,.15);border-radius:14px;padding:14px 20px;margin-bottom:16px;max-width:360px;width:100%;text-align:center}
+    #myClue .clue-label{font-size:9px;text-transform:uppercase;letter-spacing:2px;color:rgba(192,132,252,.5);margin-bottom:6px}
+    #myClue .clue-text{font-size:15px;font-weight:600;color:#E9D5FF;line-height:1.6}
+
+    /* Answer input */
+    #answerBox{display:flex;gap:8px;max-width:360px;width:100%}
+    #answerInput{flex:1;padding:11px 16px;font-family:'Outfit',sans-serif;font-size:15px;font-weight:600;border:1.5px solid rgba(255,255,255,.08);border-radius:12px;background:rgba(255,255,255,.04);color:#fff;outline:none}
+    #answerInput:focus{border-color:rgba(192,132,252,.3)}
+    #answerBtn{padding:11px 20px;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;border:none;border-radius:12px;background:linear-gradient(135deg,#C084FC,#F472B6);color:#0c0c14;cursor:pointer}
+    #answerBtn:active{transform:scale(.95)}
+
+    /* Feedback */
+    #feedback{margin-top:12px;font-size:13px;font-weight:600;min-height:20px}
+
+    /* Chat */
+    #chatArea{flex-shrink:0;border-top:1px solid rgba(255,255,255,.04);background:rgba(0,0,0,.2);display:flex;flex-direction:column;height:160px}
+    #chatMessages{flex:1;overflow-y:auto;padding:8px 12px;display:flex;flex-direction:column;gap:3px}
+    .chat-msg{font-size:12px;line-height:1.4}
+    .chat-msg .name{font-weight:700;margin-right:4px}
+    .chat-system{font-size:11px;color:rgba(192,132,252,.5);font-style:italic}
+    #chatForm{display:flex;gap:6px;padding:8px 12px;border-top:1px solid rgba(255,255,255,.03)}
+    #chatInput{flex:1;padding:9px 14px;font-family:'Outfit',sans-serif;font-size:13px;border:1px solid rgba(255,255,255,.06);border-radius:10px;background:rgba(255,255,255,.03);color:#fff;outline:none}
+    #chatInput:focus{border-color:rgba(192,132,252,.25)}
+    #chatSend{padding:9px 16px;font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;border:none;border-radius:10px;background:rgba(192,132,252,.2);color:#C084FC;cursor:pointer}
+
+    /* Overlay */
+    #overlay{display:none;position:fixed;inset:0;z-index:90;background:rgba(6,6,10,.92);backdrop-filter:blur(8px);align-items:center;justify-content:center;text-align:center;flex-direction:column;padding:20px}
+    #overlay.show{display:flex}
+    #overlay h2{font-family:'Space Grotesk',sans-serif;font-size:clamp(22px,5vw,32px);font-weight:800;margin-bottom:8px}
+    #overlay p{color:rgba(255,255,255,.4);font-size:14px;line-height:1.6}
+    #overlay .pbtn{margin-top:20px}
+
+    /* Solved animation */
+    @keyframes solvedPulse{0%{transform:scale(1)}50%{transform:scale(1.05)}100%{transform:scale(1)}}
+    .solved-anim{animation:solvedPulse .5s ease}
+
+    /* Responsive */
+    @media(max-width:500px){
+      #chatArea{height:130px}
+      .mbox{padding:26px 24px}
+    }
+    @media(min-width:768px){
+      #gameUI.show{flex-direction:row;flex-wrap:wrap}
+      #topBar{width:100%}
+      #puzzleArea{flex:1;min-width:0}
+      #chatArea{width:280px;height:auto;border-top:none;border-left:1px solid rgba(255,255,255,.04)}
+    }
+  </style>
+</head>
+<body>
+
+<div id="menu"><div class="mbox">
+  <h1>Escape Room de Romano</h1>
+  <div class="sub">cooperativo &middot; 2-4 jugadores</div>
+  <input type="text" id="nameInput" placeholder="Tu nombre..." maxlength="12" autofocus value="Romano">
+  <button class="pbtn" id="joinBtn">UNIRSE</button>
+  <div id="lobbyInfo"></div>
+  <div id="lobbyPlayers"></div>
+  <button class="pbtn" id="startBtn">EMPEZAR</button>
+  <div class="hint-text">Resuelvan puzzles juntos &middot; Cada uno ve pistas diferentes<br>Usen el chat para comunicarse &middot; 3 salas tematicas</div>
+</div></div>
+
+<div id="gameUI">
+  <div id="topBar">
+    <button id="backBtn2" onclick="location.href='/'">&#8592;</button>
+    <div id="roomLabel">Sala 1: Laboratorio</div>
+    <div id="timerLabel" style="color:#C084FC">5:00</div>
+    <div id="hintsLeft" onclick="requestHint()">💡 3 pistas</div>
+  </div>
+
+  <div id="puzzleArea">
+    <div id="puzzleTitle">Cargando...</div>
+    <div id="puzzleDesc"></div>
+    <div id="myClue">
+      <div class="clue-label">Tu pista</div>
+      <div class="clue-text" id="clueText">Esperando...</div>
+    </div>
+    <div id="answerBox">
+      <input type="text" id="answerInput" placeholder="Tu respuesta..." maxlength="30" autocomplete="off">
+      <button id="answerBtn" onclick="submitAnswer()">ENVIAR</button>
+    </div>
+    <div id="feedback"></div>
+  </div>
+
+  <div id="chatArea">
+    <div id="chatMessages"></div>
+    <form id="chatForm" onsubmit="sendChat(event)">
+      <input type="text" id="chatInput" placeholder="Escribe..." maxlength="100" autocomplete="off">
+      <button type="submit" id="chatSend">Enviar</button>
+    </form>
+  </div>
+</div>
+
+<div id="overlay"><h2 id="olT"></h2><p id="olM"></p></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+(function(){
+'use strict';
+var socket=io('/escape',{transports:['websocket']});
+var joined=false;
+
+// Menu
+document.getElementById('joinBtn').onclick=function(){
+  socket.emit('join',{name:document.getElementById('nameInput').value.trim()||'Jugador'});
+  joined=true;
+  document.getElementById('joinBtn').style.display='none';
+  document.getElementById('lobbyInfo').textContent='Esperando jugadores...';
+  document.getElementById('startBtn').style.display='block';
+};
+document.getElementById('nameInput').onkeydown=function(e){if(e.key==='Enter')document.getElementById('joinBtn').click();};
+document.getElementById('startBtn').onclick=function(){socket.emit('start');};
+document.getElementById('answerInput').onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();submitAnswer();}};
+
+// Submit answer
+window.submitAnswer=function(){
+  var inp=document.getElementById('answerInput');
+  var val=inp.value.trim();
+  if(!val)return;
+  socket.emit('answer',{answer:val});
+  inp.value='';
+};
+
+// Chat
+window.sendChat=function(e){
+  e.preventDefault();
+  var inp=document.getElementById('chatInput');
+  var msg=inp.value.trim();
+  if(!msg)return;
+  socket.emit('chat',{msg:msg});
+  inp.value='';
+};
+
+// Hint
+window.requestHint=function(){socket.emit('hint');};
+
+// State
+var ROOM_NAMES=['Laboratorio','Mansion Embrujada','Piramide Antigua'];
+var ROOM_COLORS=['#C084FC','#F472B6','#FB923C'];
+
+socket.on('lobby',function(d){
+  var lp=document.getElementById('lobbyPlayers');
+  lp.innerHTML='';
+  for(var i=0;i<d.players.length;i++){
+    var p=d.players[i];
+    var el=document.createElement('div');
+    el.className='lobby-player';
+    el.style.background=p.color;el.style.color='#0c0c14';
+    el.textContent=p.name;
+    lp.appendChild(el);
+  }
+  document.getElementById('lobbyInfo').textContent='Jugadores: '+d.players.length+'/4';
+});
+
+socket.on('gameStart',function(){
+  document.getElementById('menu').classList.add('hidden');
+  document.getElementById('gameUI').classList.add('show');
+});
+
+socket.on('puzzle',function(d){
+  document.getElementById('roomLabel').textContent='Sala '+(d.room+1)+': '+ROOM_NAMES[d.room];
+  document.getElementById('roomLabel').style.color=ROOM_COLORS[d.room];
+  document.getElementById('puzzleTitle').textContent=d.title;
+  document.getElementById('puzzleTitle').style.color=ROOM_COLORS[d.room];
+  document.getElementById('puzzleDesc').textContent=d.desc;
+  document.getElementById('clueText').textContent=d.clue;
+  document.getElementById('feedback').textContent='';
+  document.getElementById('feedback').style.color='';
+  document.getElementById('answerInput').value='';
+  document.getElementById('answerInput').focus();
+  // Animate
+  document.getElementById('myClue').classList.remove('solved-anim');
+  void document.getElementById('myClue').offsetWidth;
+  document.getElementById('myClue').classList.add('solved-anim');
+});
+
+socket.on('state',function(d){
+  // Timer
+  var m=Math.floor(d.timeLeft/60),s=d.timeLeft%60;
+  var tl=document.getElementById('timerLabel');
+  tl.textContent=m+':'+(s<10?'0':'')+s;
+  tl.style.color=d.timeLeft<30?'#F87171':(d.timeLeft<60?'#FBBF24':ROOM_COLORS[d.room||0]);
+  // Hints
+  document.getElementById('hintsLeft').textContent='💡 '+d.hints+' pistas';
+});
+
+socket.on('wrong',function(d){
+  var fb=document.getElementById('feedback');
+  fb.textContent=d.msg||'Incorrecto, sigan intentando!';
+  fb.style.color='#F87171';
+});
+
+socket.on('solved',function(d){
+  var fb=document.getElementById('feedback');
+  fb.textContent='Puzzle resuelto!';
+  fb.style.color='#4ADE80';
+  addSystemMsg('Puzzle resuelto! '+(d.msg||''));
+});
+
+socket.on('roomComplete',function(d){
+  addSystemMsg('Sala completada! Tiempo restante: '+d.timeLeft+'s');
+  var ol=document.getElementById('overlay'),t=document.getElementById('olT'),m=document.getElementById('olM');
+  ol.classList.add('show');
+  t.textContent='SALA COMPLETADA';t.style.color='#4ADE80';
+  m.textContent='Siguiente: '+ROOM_NAMES[d.nextRoom]+'...';
+  setTimeout(function(){ol.classList.remove('show');},2500);
+});
+
+socket.on('gameOver',function(d){
+  var ol=document.getElementById('overlay'),t=document.getElementById('olT'),m=document.getElementById('olM');
+  ol.classList.add('show');
+  if(d.win){
+    t.textContent='ESCAPARON!';t.style.color='#4ADE80';
+    m.innerHTML='Tiempo total: '+d.totalTime+'s<br>Felicitaciones!';
+  } else {
+    t.textContent='TIEMPO AGOTADO';t.style.color='#F87171';
+    m.textContent='No lograron escapar. Intenten de nuevo!';
+  }
+  m.innerHTML+='<br><br><a href="/escape" style="color:#C084FC">Jugar de nuevo</a>';
+});
+
+socket.on('hint',function(d){
+  addSystemMsg('PISTA: '+d.text);
+  document.getElementById('clueText').textContent=d.text;
+});
+
+socket.on('chat',function(d){
+  var msgs=document.getElementById('chatMessages');
+  var div=document.createElement('div');
+  div.className='chat-msg';
+  div.innerHTML='<span class="name" style="color:'+d.color+'">'+d.name+':</span>'+escapeHtml(d.msg);
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+});
+
+function addSystemMsg(text){
+  var msgs=document.getElementById('chatMessages');
+  var div=document.createElement('div');
+  div.className='chat-system';
+  div.textContent=text;
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+function escapeHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+})();
+</script>
+</body>
+</html>
