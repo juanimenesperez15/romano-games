@@ -17,8 +17,8 @@ var POWERUP_INTERVAL = 8000; // ms between powerup spawns
 var POWERUP_DURATION = 5000;
 
 // ── Bot config ──
-var BOT_SPEED = PAD_SPEED * 0.8; // 80% of normal pad speed
-var BOT_DEADZONE = 20; // only move if ball is more than 20px off from pad center
+var BOT_SPEED = PAD_SPEED * 0.45; // 45% of normal pad speed - easy bots
+var BOT_DEADZONE = 50; // only react when ball is 50px+ off center
 var botIdCounter = 0;
 
 // ── Sides: top, right, bottom, left ──
