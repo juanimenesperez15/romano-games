@@ -180,32 +180,51 @@ window.requestHint=function(){socket.emit('hint');};
 var ROOM_NAMES=['Laboratorio','Mansion Embrujada','Piramide Antigua'];
 var ROOM_COLORS=['#C084FC','#F472B6','#FB923C'];
 
-socket.on('lobby',function(d){
-  var lp=document.getElementById('lobbyPlayers');
-  lp.innerHTML='';
-  for(var i=0;i<d.players.length;i++){
-    var p=d.players[i];
-    var el=document.createElement('div');
-    el.className='lobby-player';
-    el.style.background=p.color;el.style.color='#0c0c14';
-    el.textContent=p.name;
-    lp.appendChild(el);
+// State handles both lobby and playing
+socket.on('state',function(d){
+  if(d.phase==='lobby'){
+    // Update lobby players
+    var lp=document.getElementById('lobbyPlayers');
+    lp.innerHTML='';
+    for(var i=0;i<d.players.length;i++){
+      var p=d.players[i];
+      var el=document.createElement('div');
+      el.className='lobby-player';
+      el.style.background=p.color;el.style.color='#0c0c14';
+      el.textContent=p.name;
+      lp.appendChild(el);
+    }
+    document.getElementById('lobbyInfo').textContent='Jugadores: '+d.players.length+'/4';
+  } else if(d.phase==='playing'){
+    // Show game UI if not visible
+    if(!document.getElementById('gameUI').classList.contains('show')){
+      document.getElementById('menu').classList.add('hidden');
+      document.getElementById('gameUI').classList.add('show');
+    }
+    // Timer
+    var m=Math.floor(d.timer/60),s=d.timer%60;
+    var tl=document.getElementById('timerLabel');
+    tl.textContent=m+':'+(s<10?'0':'')+s;
+    tl.style.color=d.timer<30?'#F87171':(d.timer<60?'#FBBF24':ROOM_COLORS[d.currentRoom||0]);
+    document.getElementById('hintsLeft').textContent='💡 '+d.hintsLeft+' pistas';
+    document.getElementById('roomLabel').textContent='Sala '+(d.currentRoom+1)+': '+ROOM_NAMES[d.currentRoom];
+    document.getElementById('roomLabel').style.color=ROOM_COLORS[d.currentRoom];
   }
-  document.getElementById('lobbyInfo').textContent='Jugadores: '+d.players.length+'/4';
-});
-
-socket.on('gameStart',function(){
-  document.getElementById('menu').classList.add('hidden');
-  document.getElementById('gameUI').classList.add('show');
 });
 
 socket.on('puzzle',function(d){
-  document.getElementById('roomLabel').textContent='Sala '+(d.room+1)+': '+ROOM_NAMES[d.room];
-  document.getElementById('roomLabel').style.color=ROOM_COLORS[d.room];
-  document.getElementById('puzzleTitle').textContent=d.title;
-  document.getElementById('puzzleTitle').style.color=ROOM_COLORS[d.room];
-  document.getElementById('puzzleDesc').textContent=d.desc;
-  document.getElementById('clueText').textContent=d.clue;
+  // d.room can be string name or number
+  var roomIdx=typeof d.room==='number'?d.room:ROOM_NAMES.indexOf(d.room);
+  if(roomIdx<0)roomIdx=0;
+  document.getElementById('roomLabel').textContent='Sala '+(roomIdx+1)+': '+ROOM_NAMES[roomIdx];
+  document.getElementById('roomLabel').style.color=ROOM_COLORS[roomIdx];
+  document.getElementById('puzzleTitle').textContent=d.puzzleName||d.title||'Puzzle';
+  document.getElementById('puzzleTitle').style.color=ROOM_COLORS[roomIdx];
+  document.getElementById('puzzleDesc').textContent=d.description||d.desc||'';
+  // Clues can be array or string
+  var clueStr=d.clue||'';
+  if(d.clues){clueStr=Array.isArray(d.clues)?d.clues.join('\n'):d.clues;}
+  document.getElementById('clueText').textContent=clueStr;
   document.getElementById('feedback').textContent='';
   document.getElementById('feedback').style.color='';
   document.getElementById('answerInput').value='';
@@ -216,15 +235,7 @@ socket.on('puzzle',function(d){
   document.getElementById('myClue').classList.add('solved-anim');
 });
 
-socket.on('state',function(d){
-  // Timer
-  var m=Math.floor(d.timeLeft/60),s=d.timeLeft%60;
-  var tl=document.getElementById('timerLabel');
-  tl.textContent=m+':'+(s<10?'0':'')+s;
-  tl.style.color=d.timeLeft<30?'#F87171':(d.timeLeft<60?'#FBBF24':ROOM_COLORS[d.room||0]);
-  // Hints
-  document.getElementById('hintsLeft').textContent='💡 '+d.hints+' pistas';
-});
+// (state handled above)
 
 socket.on('wrong',function(d){
   var fb=document.getElementById('feedback');
