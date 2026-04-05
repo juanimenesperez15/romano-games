@@ -123,15 +123,8 @@
   draw();
 })();
 
-// Set game URLs - update these with your Railway URLs
-var SNAKE_URL='https://slither-game-production.up.railway.app';
-var PONG_URL=''; // Set this after deploying pong to Railway
-
-document.getElementById('snakeLink').href=SNAKE_URL;
-document.getElementById('pongLink').onclick=function(e){
-  if(!PONG_URL){e.preventDefault();alert('Pong se esta subiendo a Railway. Pronto estara disponible!');}
-  else{this.href=PONG_URL;}
-};
+document.getElementById('snakeLink').href='/snake';
+document.getElementById('pongLink').href='/pong';
 </script>
 </body>
 </html>
