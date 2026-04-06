@@ -1,8 +1,8 @@
 module.exports = function (io) {
   var PLAYER_COLORS = ['#EF4444', '#3B82F6', '#22C55E', '#F59E0B'];
-  var ROOM_TIME = 300; // 5 minutes per room
+  var ROOM_TIME = 240; // 4 minutes per room
   var MAX_HINTS = 3;
-  var HINT_PENALTY = 30;
+  var HINT_PENALTY = 45;
   var MAX_CHAT = 100;
   var TICK_RATE = 33; // ~30fps
   var INTERACT_DIST = 60;
@@ -19,8 +19,11 @@ module.exports = function (io) {
     bookNums.blue = digits[1];
     bookNums.green = digits[2];
     bookNums.yellow = digits[3];
-    // Order: blue, green, yellow, red (cielo, hierba, sol, sangre)
-    var answer = '' + bookNums.blue + bookNums.green + bookNums.yellow + bookNums.red;
+    bookNums.purple = digits[4];
+    // Rainbow order: rojo, naranja, amarillo, verde, azul, morado
+    // Colors present: rojo, azul, verde, amarillo, morado (no naranja)
+    // Reversed rainbow among present colors: morado, azul, verde, amarillo, rojo
+    var answer = '' + bookNums.purple + bookNums.blue + bookNums.green + bookNums.yellow + bookNums.red;
 
     return {
       name: 'La Oficina',
@@ -28,7 +31,7 @@ module.exports = function (io) {
       width: 600,
       height: 400,
       answer: answer,
-      answerType: 'keypad4',
+      answerType: 'keypad5',
       puzzleObjectId: 'door',
       objects: [
         {
@@ -42,7 +45,7 @@ module.exports = function (io) {
           label: 'Estanteria', icon: '📚',
           clue: {
             title: 'Estanteria de libros',
-            content: '4 libros de colores con numeros en el lomo:\n🔴 Rojo = ' + bookNums.red + '\n🔵 Azul = ' + bookNums.blue + '\n🟢 Verde = ' + bookNums.green + '\n🟡 Amarillo = ' + bookNums.yellow,
+            content: '5 libros de colores con numeros en el lomo:\n🔴 Rojo = ' + bookNums.red + '\n🔵 Azul = ' + bookNums.blue + '\n🟢 Verde = ' + bookNums.green + '\n🟡 Amarillo = ' + bookNums.yellow + '\n🟣 Morado = ' + bookNums.purple,
             type: 'text'
           },
           visibleTo: 'split-a'
@@ -52,7 +55,7 @@ module.exports = function (io) {
           label: 'Pintura', icon: '🖼️',
           clue: {
             title: 'Detras de la pintura',
-            content: 'Un mensaje oculto:\n"El orden es: el color del cielo, la hierba, el sol, la sangre"',
+            content: 'Un mensaje oculto:\n"El orden sigue al arcoiris invertido entre los colores presentes"',
             type: 'text'
           },
           visibleTo: 'split-b'
@@ -60,7 +63,7 @@ module.exports = function (io) {
         {
           id: 'door', type: 'puzzle', x: 530, y: 160, w: 50, h: 80,
           label: 'Puerta', icon: '🚪',
-          clue: { title: 'Puerta cerrada', content: 'Necesitas un codigo de 4 digitos para abrir esta puerta.', type: 'keypad4' },
+          clue: { title: 'Puerta cerrada', content: 'Necesitas un codigo de 5 digitos para abrir esta puerta.', type: 'keypad5' },
           visibleTo: 'all'
         },
         {
@@ -77,16 +80,16 @@ module.exports = function (io) {
         }
       ],
       hints: [
-        'La pintura habla de colores del cielo, hierba, sol y sangre...',
-        'Cielo=azul, hierba=verde, sol=amarillo, sangre=rojo. Busca los numeros de los libros en ese orden.',
-        'El codigo es: Azul, Verde, Amarillo, Rojo → ' + answer
+        'La pintura habla del arcoiris invertido. El arcoiris es: rojo, naranja, amarillo, verde, azul, morado.',
+        'Los colores presentes en los libros son: rojo, azul, verde, amarillo, morado. Invertido: morado, azul, verde, amarillo, rojo.',
+        'El codigo es: Morado, Azul, Verde, Amarillo, Rojo → ' + answer
       ]
     };
   }
 
   function generateRoom2() {
-    // Beaker order: triangle=B, circle=A, so square=C → answer is BAC
-    var answer = 'BAC';
+    // Beaker order: triangle=B, circle=A, so square=C, star=D → answer is BACD
+    var answer = 'BACD';
     return {
       name: 'El Laboratorio',
       emoji: '🧪',
@@ -101,7 +104,7 @@ module.exports = function (io) {
           label: 'Pizarra', icon: '📋',
           clue: {
             title: 'Pizarra',
-            content: 'Una formula quimica:\n△ + ○ = □\n"Mezcla los ingredientes en orden"',
+            content: 'Una formula quimica:\n△ + ○ = □ + ☆\n"Mezcla los ingredientes en orden"',
             type: 'text'
           },
           visibleTo: 'all'
@@ -110,8 +113,8 @@ module.exports = function (io) {
           id: 'beakers', type: 'furniture', x: 100, y: 200, w: 90, h: 50,
           label: 'Vasos de precipitado', icon: '🧫',
           clue: {
-            title: 'Vasos A, B y C',
-            content: 'Tres vasos de precipitado etiquetados A, B y C.\nCada uno contiene un liquido de diferente color.\nDeben ir en el gabinete en el orden correcto.',
+            title: 'Vasos A, B, C y D',
+            content: 'Cuatro vasos de precipitado etiquetados A, B, C y D.\nCada uno contiene un liquido de diferente color.\nDeben ir en el gabinete en el orden correcto.',
             type: 'text'
           },
           visibleTo: 'all'
@@ -131,7 +134,7 @@ module.exports = function (io) {
           label: 'Cuaderno', icon: '📓',
           clue: {
             title: 'Cuaderno en el piso',
-            content: 'Un cuaderno abierto en el piso:\n"○ = Vaso A"',
+            content: 'Un cuaderno abierto en el piso:\n"○ = Vaso A"\n"☆ = Vaso D"',
             type: 'text'
           },
           visibleTo: 'split-b'
@@ -139,13 +142,13 @@ module.exports = function (io) {
         {
           id: 'cabinet', type: 'puzzle', x: 500, y: 160, w: 60, h: 80,
           label: 'Gabinete', icon: '🗄️',
-          clue: { title: 'Gabinete cerrado', content: 'Tiene 3 ranuras para vasos. Ingresa el orden correcto (ej: ABC).', type: 'beakers' },
+          clue: { title: 'Gabinete cerrado', content: 'Tiene 4 ranuras para vasos. Ingresa el orden correcto (ej: ABCD).', type: 'beakers' },
           visibleTo: 'all'
         },
         {
           id: 'fridge', type: 'decoration', x: 50, y: 80, w: 45, h: 60,
           label: 'Refrigerador', icon: '🧊',
-          clue: { title: 'Refrigerador', content: 'Vacio... hace frio.', type: 'text' },
+          clue: { title: 'Refrigerador', content: 'Dentro hay una nota pegada:\n"☆ = Vaso A"\n(La tinta esta corrida y apenas se lee...)', type: 'text' },
           visibleTo: 'all'
         },
         {
@@ -156,17 +159,20 @@ module.exports = function (io) {
         }
       ],
       hints: [
-        'La pizarra muestra: △ + ○ = □. Necesitas saber que vaso es cada simbolo.',
-        'El microscopio dice △=B, el cuaderno dice ○=A. Si △=B y ○=A, entonces □ debe ser C.',
-        'El orden es B, A, C → ' + answer
+        'La pizarra muestra: △ + ○ = □ + ☆. Necesitas saber que vaso es cada simbolo. Cuidado: una pista da informacion falsa.',
+        'El microscopio dice △=B, el cuaderno dice ○=A y ☆=D. El refrigerador miente! Si △=B, ○=A, ☆=D, entonces □=C.',
+        'El orden es B, A, C, D → ' + answer
       ]
     };
   }
 
   function generateRoom3() {
-    // Mirror shows "824" reversed → actual is 428. Add 5 to each: 4+5=9, 2+5=7, 8+5=13→3
-    // So answer is 973
-    var answer = '973';
+    // Mirror shows "4 2 8" reversed → actual is 8, 2, 4.
+    // Statues: 1st=IX(9), 2nd=VII(7), 3rd=III(3)
+    // Transformation: multiply each mirror number by its statue, take last digit
+    // 8*9=72→2, 2*7=14→4, 4*3=12→2
+    // Answer: 242
+    var answer = '242';
     return {
       name: 'La Boveda',
       emoji: '🏦',
@@ -215,7 +221,7 @@ module.exports = function (io) {
           label: 'Baldosa suelta', icon: '🧱',
           clue: {
             title: 'Nota bajo la baldosa',
-            content: 'Una nota arrugada:\n"Suma 5 a cada numero del espejo"',
+            content: 'Una nota arrugada:\n"Multiplica cada numero del espejo por el numero de su estatua correspondiente.\nQuédate solo con el ultimo digito del resultado."',
             type: 'text'
           },
           visibleTo: 'split-b'
@@ -240,9 +246,9 @@ module.exports = function (io) {
         }
       ],
       hints: [
-        'El espejo muestra numeros... pero reflejados. Las estatuas tambien tienen numeros romanos.',
-        'El espejo muestra 4,2,8. La nota dice sumar 5 a cada uno: 4+5=9, 2+5=7, 8+5=13→3.',
-        'El codigo de la caja fuerte es: 9, 7, 3 → ' + answer
+        'El espejo muestra numeros invertidos. Las estatuas tienen numeros romanos que corresponden a cada digito.',
+        'Espejo invertido: 8, 2, 4. Estatuas: 9, 7, 3. Multiplica cada par y quedáte con el ultimo digito: 8x9=72→2, 2x7=14→4, 4x3=12→2.',
+        'El codigo de la caja fuerte es: 2, 4, 2 → ' + answer
       ]
     };
   }
