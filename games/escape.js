@@ -639,12 +639,12 @@ module.exports = function (io) {
         delete state.players[socket.id];
         addChat('Sistema', '#888', name + ' se desconecto');
 
-        if (getPlayerCount() === 0 && state.phase === 'playing') {
+        if (getPlayerCount() === 0) {
           stopTimer();
           stopTick();
           state = resetState();
         }
-        broadcastLobby();
+        if (state.phase === 'lobby') broadcastLobby();
       }
     });
   });

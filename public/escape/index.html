@@ -218,7 +218,7 @@
   'use strict';
 
   // ─── Socket ───────────────────────────────────────────────────────
-  var socket = io('/escape');
+  var socket = io('/escape', {transports:['websocket'], reconnection:true, reconnectionDelay:1000});
 
   // ─── DOM refs ─────────────────────────────────────────────────────
   var $lobby = document.getElementById('lobby');
@@ -338,14 +338,13 @@
 
   // Objects come once per room
   socket.on('objects', function(data) {
-    if (gameState) {
-      gameState.objects = data.objects;
-      gameState.roomWidth = data.roomWidth;
-      gameState.roomHeight = data.roomHeight;
-      gameState.roomName = data.roomName;
-      gameState.roomEmoji = data.roomEmoji;
-      gameState.currentRoom = data.currentRoom;
-    }
+    if (!gameState) gameState = {};
+    gameState.objects = data.objects;
+    gameState.roomWidth = data.roomWidth;
+    gameState.roomHeight = data.roomHeight;
+    gameState.roomName = data.roomName;
+    gameState.roomEmoji = data.roomEmoji;
+    gameState.currentRoom = data.currentRoom;
     roomW = data.roomWidth || 600;
     roomH = data.roomHeight || 400;
     localX = roomW / 2;
