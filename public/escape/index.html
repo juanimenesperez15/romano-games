@@ -7,156 +7,96 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
   <style>
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    :root{--bg:#0c0c14;--card:rgba(255,255,255,.03);--border:rgba(255,255,255,.06);--purple:#C084FC;--pink:#F472B6;--orange:#FB923C;--green:#22C55E;--red:#EF4444}
+    :root{--bg:#0c0c14;--card:rgba(255,255,255,.03);--border:rgba(255,255,255,.06);--purple:#C084FC;--pink:#F472B6;--orange:#FB923C;--green:#22C55E;--red:#EF4444;--floor:#2a2018;--wall:#1a1a24}
     html,body{height:100%;overflow:hidden}
     body{background:var(--bg);font-family:'Outfit',sans-serif;color:#fff;touch-action:manipulation;-webkit-user-select:none;user-select:none}
 
     /* ── LOBBY ── */
     #lobby{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:100;background:radial-gradient(ellipse at 50% 30%,rgba(192,132,252,.06),transparent 70%),var(--bg)}
     #lobby.hidden{display:none}
-    .lobby-box{text-align:center;padding:32px;border-radius:24px;background:var(--card);border:1px solid var(--border);max-width:92vw;width:380px;backdrop-filter:blur(20px)}
+    .lobby-box{text-align:center;padding:32px;border-radius:24px;background:var(--card);border:1px solid var(--border);max-width:92vw;width:400px;backdrop-filter:blur(20px)}
     .lobby-box h1{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:800;background:linear-gradient(135deg,var(--purple),var(--pink),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:2px}
     .lobby-box .sub{color:rgba(255,255,255,.2);font-size:9px;letter-spacing:3px;text-transform:uppercase;margin-bottom:24px}
-    .lobby-input{display:block;width:220px;margin:0 auto 14px;padding:12px 18px;font-family:'Outfit',sans-serif;font-size:15px;font-weight:600;border:1.5px solid var(--border);border-radius:14px;background:rgba(255,255,255,.04);color:#fff;text-align:center;outline:none;transition:border-color .2s}
+    .lobby-input{display:block;width:240px;margin:0 auto 14px;padding:12px 18px;font-family:'Outfit',sans-serif;font-size:15px;font-weight:600;border:1.5px solid var(--border);border-radius:14px;background:rgba(255,255,255,.04);color:#fff;text-align:center;outline:none;transition:border-color .2s}
     .lobby-input:focus{border-color:rgba(192,132,252,.3)}
-    .btn{display:block;width:220px;margin:8px auto 0;padding:13px;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;border:none;border-radius:14px;cursor:pointer;letter-spacing:.4px;transition:transform .15s,opacity .15s}
+    .btn{display:block;width:240px;margin:8px auto 0;padding:13px;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;border:none;border-radius:14px;cursor:pointer;letter-spacing:.4px;transition:transform .15s,opacity .15s}
     .btn:active{transform:scale(.97)}
     .btn-primary{background:linear-gradient(135deg,var(--purple),var(--pink));color:var(--bg)}
     .btn-secondary{background:rgba(255,255,255,.06);color:rgba(255,255,255,.5)}
     #player-list{display:flex;gap:8px;justify-content:center;margin:16px 0;flex-wrap:wrap;min-height:32px}
     .player-tag{padding:6px 14px;border-radius:10px;font-size:12px;font-weight:700;color:var(--bg);animation:popIn .3s ease}
     #lobby-info{color:rgba(255,255,255,.25);font-size:12px;margin-bottom:8px}
-    .lobby-hint{margin-top:16px;color:rgba(255,255,255,.1);font-size:9px;line-height:2.2}
+    .lobby-hint{margin-top:16px;color:rgba(255,255,255,.15);font-size:10px;line-height:2.2}
 
-    /* ── GAME ── */
+    /* ── GAME CONTAINER ── */
     #game{display:none;height:100vh;height:100dvh;flex-direction:column}
     #game.active{display:flex}
 
     /* Top bar */
-    .topbar{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:rgba(0,0,0,.4);border-bottom:1px solid var(--border);flex-shrink:0;gap:8px}
-    .topbar-back{background:none;border:none;color:rgba(255,255,255,.3);font-size:18px;cursor:pointer;padding:4px 8px}
-    .topbar-room{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;flex:1;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .topbar{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:rgba(0,0,0,.5);border-bottom:1px solid var(--border);flex-shrink:0;gap:8px;z-index:10}
+    .topbar-room{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .topbar-timer{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:800;min-width:60px;text-align:center}
-    .topbar-hint{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:6px 12px;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;color:rgba(255,255,255,.4);cursor:pointer;white-space:nowrap}
+    .topbar-hint{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:6px 12px;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;color:rgba(255,255,255,.4);cursor:pointer;white-space:nowrap}
     .topbar-hint:hover{background:rgba(255,255,255,.1);color:rgba(255,255,255,.6)}
 
-    /* Content area */
-    .content{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
-    @media(min-width:768px){.content{flex-direction:row}}
+    /* Canvas area */
+    .canvas-wrap{flex:1;position:relative;overflow:hidden;min-height:0;background:var(--bg)}
+    #gameCanvas{display:block;width:100%;height:100%}
 
-    /* Puzzle area */
-    .puzzle-area{flex:1;display:flex;flex-direction:column;align-items:center;padding:16px 14px;overflow-y:auto;min-height:0;-webkit-overflow-scrolling:touch}
-    .puzzle-title{font-family:'Space Grotesk',sans-serif;font-size:clamp(18px,4vw,24px);font-weight:800;margin-bottom:4px;transition:color .3s}
-    .puzzle-desc{font-size:13px;color:rgba(255,255,255,.3);margin-bottom:16px;text-align:center;max-width:420px;line-height:1.6}
-
-    /* Visual puzzle container */
-    .puzzle-visual{width:100%;max-width:420px;min-height:100px;margin-bottom:16px;display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center}
-
-    /* Clue box */
-    .clue-box{background:linear-gradient(135deg,rgba(192,132,252,.08),rgba(244,114,182,.05));border:1px solid rgba(192,132,252,.15);border-radius:16px;padding:14px 18px;margin-bottom:14px;max-width:420px;width:100%;text-align:center}
-    .clue-label{font-size:9px;text-transform:uppercase;letter-spacing:2.5px;color:rgba(192,132,252,.4);margin-bottom:6px;font-weight:600}
-    .clue-text{font-size:13px;font-weight:600;color:#E9D5FF;line-height:1.7;white-space:pre-line}
-
-    /* Selection display */
-    .selection-bar{display:flex;gap:6px;align-items:center;justify-content:center;margin-bottom:12px;min-height:36px;flex-wrap:wrap;max-width:420px;width:100%}
-    .selection-item{padding:5px 12px;border-radius:8px;font-size:12px;font-weight:700;background:rgba(192,132,252,.15);color:var(--purple);border:1px solid rgba(192,132,252,.2);animation:popIn .2s ease}
-    .selection-placeholder{color:rgba(255,255,255,.1);font-size:12px}
-
-    /* Action buttons */
-    .action-bar{display:flex;gap:8px;max-width:420px;width:100%}
-    .btn-clear{flex:0 0 auto;padding:11px 18px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;border:1.5px solid var(--border);border-radius:12px;background:transparent;color:rgba(255,255,255,.3);cursor:pointer}
-    .btn-clear:hover{border-color:rgba(255,255,255,.15);color:rgba(255,255,255,.5)}
-    .btn-submit{flex:1;padding:12px 20px;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;border:none;border-radius:12px;background:linear-gradient(135deg,var(--purple),var(--pink));color:var(--bg);cursor:pointer;transition:transform .1s}
-    .btn-submit:active{transform:scale(.97)}
-    .btn-submit:disabled{opacity:.3;cursor:not-allowed}
-    .feedback{margin-top:10px;font-size:13px;font-weight:700;min-height:20px;text-align:center}
-
-    /* ── FLASK VISUALS ── */
-    .flask{width:62px;height:85px;border-radius:8px 8px 16px 16px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;cursor:pointer;border:2.5px solid rgba(255,255,255,.08);transition:all .2s;position:relative;overflow:hidden;padding-bottom:8px}
-    .flask::before{content:'';position:absolute;bottom:0;left:0;right:0;height:60%;border-radius:0 0 13px 13px;opacity:.25;transition:opacity .2s}
-    .flask:hover{transform:translateY(-3px);border-color:rgba(255,255,255,.2)}
-    .flask.selected{border-color:var(--purple);box-shadow:0 0 20px rgba(192,132,252,.3)}
-    .flask.selected::before{opacity:.5}
-    .flask-label{font-size:9px;font-weight:700;color:rgba(255,255,255,.5);margin-top:auto;position:relative;z-index:1}
-    .flask-num{position:absolute;top:4px;right:6px;font-size:10px;font-weight:800;color:var(--purple);opacity:0}
-    .flask.selected .flask-num{opacity:1}
-
-    /* ── SWITCH VISUALS ── */
-    .switch-group{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;width:80px}
-    .switch-label{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:800;color:rgba(255,255,255,.4)}
-    .switch-track{width:52px;height:28px;border-radius:14px;background:rgba(255,255,255,.06);border:2px solid rgba(255,255,255,.1);position:relative;transition:all .25s}
-    .switch-knob{width:22px;height:22px;border-radius:50%;background:#555;position:absolute;top:1px;left:1px;transition:all .25s}
-    .switch-group.on .switch-track{background:rgba(34,197,94,.2);border-color:rgba(34,197,94,.4)}
-    .switch-group.on .switch-knob{left:26px;background:var(--green)}
-    .switch-status{font-size:10px;font-weight:700;color:rgba(255,255,255,.2);transition:color .2s}
-    .switch-group.on .switch-status{color:var(--green)}
-
-    /* ── PORTRAIT VISUALS ── */
-    .portrait-source{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-bottom:16px}
-    .portrait-card{width:60px;height:75px;border-radius:12px;background:rgba(255,255,255,.04);border:2px solid rgba(255,255,255,.08);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;gap:2px}
-    .portrait-card:hover{border-color:rgba(244,114,182,.3);transform:scale(1.05)}
-    .portrait-card.used{opacity:.3;pointer-events:none}
-    .portrait-emoji{font-size:28px}
-    .portrait-name{font-size:8px;font-weight:700;color:rgba(255,255,255,.35)}
-    .portrait-slots{display:flex;gap:8px;justify-content:center}
-    .portrait-slot{width:56px;height:70px;border-radius:12px;border:2px dashed rgba(255,255,255,.1);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;color:rgba(255,255,255,.15);font-weight:700;cursor:pointer;transition:all .2s;position:relative}
-    .portrait-slot.filled{border-style:solid;border-color:var(--pink);background:rgba(244,114,182,.08)}
-    .portrait-slot .slot-num{position:absolute;top:-10px;font-size:10px;font-weight:800;color:rgba(255,255,255,.2)}
-    .portrait-slot .slot-emoji{font-size:22px}
-    .portrait-slot .slot-name{font-size:7px;font-weight:700;color:rgba(255,255,255,.4)}
-
-    /* ── PIANO VISUALS ── */
-    .piano-container{display:flex;gap:4px;justify-content:center}
-    .piano-key{width:44px;height:90px;border-radius:4px 4px 8px 8px;background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.03));border:2px solid rgba(255,255,255,.1);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:10px;cursor:pointer;transition:all .15s}
-    .piano-key:hover{background:linear-gradient(180deg,rgba(192,132,252,.15),rgba(192,132,252,.05));border-color:rgba(192,132,252,.3)}
-    .piano-key:active,.piano-key.playing{background:linear-gradient(180deg,rgba(192,132,252,.3),rgba(192,132,252,.1));border-color:var(--purple);transform:scaleY(.97);transform-origin:top}
-    .piano-key.selected{border-color:var(--pink);box-shadow:0 4px 15px rgba(244,114,182,.2)}
-    .piano-key-label{font-size:10px;font-weight:700;color:rgba(255,255,255,.4)}
-    .piano-key-num{font-size:9px;font-weight:800;color:var(--pink);margin-bottom:4px;opacity:0}
-    .piano-key.selected .piano-key-num{opacity:1}
-
-    /* ── BALANCE VISUALS ── */
-    .balance-container{width:100%;max-width:400px}
-    .balance-symbols{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-bottom:16px}
-    .balance-symbol{width:70px;height:70px;border-radius:14px;background:rgba(251,146,60,.06);border:2px solid rgba(251,146,60,.12);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;gap:2px}
-    .balance-symbol:hover{border-color:rgba(251,146,60,.3);transform:scale(1.05)}
-    .balance-symbol.selected{border-color:var(--orange);background:rgba(251,146,60,.15);box-shadow:0 0 20px rgba(251,146,60,.2)}
-    .balance-symbol-emoji{font-size:28px}
-    .balance-symbol-label{font-size:9px;font-weight:700;color:rgba(255,255,255,.35)}
-    .balance-comparisons{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
-    .balance-comp{display:flex;align-items:center;justify-content:center;gap:8px;padding:8px;border-radius:10px;background:rgba(255,255,255,.02);font-size:12px}
-    .balance-comp .heavy{font-weight:700;color:var(--orange)}
-    .balance-comp .vs{color:rgba(255,255,255,.15);font-size:10px}
-    .balance-comp .light{color:rgba(255,255,255,.35)}
-
-    /* ── CODE VISUALS ── */
-    .code-container{display:flex;gap:12px;justify-content:center;align-items:center}
-    .code-digit{width:60px;display:flex;flex-direction:column;align-items:center;gap:6px}
-    .code-btn{width:48px;height:36px;border-radius:10px;border:1.5px solid var(--border);background:rgba(255,255,255,.04);color:rgba(255,255,255,.4);font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
-    .code-btn:hover{background:rgba(255,255,255,.08);color:#fff}
-    .code-btn:active{transform:scale(.93)}
-    .code-display{width:52px;height:64px;border-radius:14px;background:rgba(255,255,255,.04);border:2px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:800;color:var(--orange);transition:all .2s}
-    .code-display.has-value{border-color:rgba(251,146,60,.3)}
-
-    /* ── CHAT ── */
-    .chat{flex-shrink:0;height:130px;border-top:1px solid var(--border);background:rgba(0,0,0,.3);display:flex;flex-direction:column;transition:height .3s}
-    @media(min-width:768px){.chat{width:280px;height:auto;border-top:none;border-left:1px solid var(--border)}}
-    .chat-toggle{display:flex;align-items:center;justify-content:space-between;padding:6px 12px;background:rgba(0,0,0,.2);cursor:pointer;border-bottom:1px solid rgba(255,255,255,.02);flex-shrink:0}
-    @media(min-width:768px){.chat-toggle{cursor:default}}
-    .chat-toggle-label{font-size:10px;font-weight:700;color:rgba(255,255,255,.2);letter-spacing:1px;text-transform:uppercase}
-    .chat-toggle-arrow{font-size:12px;color:rgba(255,255,255,.15);transition:transform .2s}
-    @media(min-width:768px){.chat-toggle-arrow{display:none}}
+    /* Chat at bottom */
+    .chat{flex-shrink:0;height:120px;border-top:1px solid var(--border);background:rgba(0,0,0,.4);display:flex;flex-direction:column;transition:height .3s;z-index:10}
+    @media(min-width:900px){.chat{height:140px}}
     .chat.collapsed{height:30px}
     .chat.collapsed .chat-messages,.chat.collapsed .chat-form{display:none}
     .chat.collapsed .chat-toggle-arrow{transform:rotate(180deg)}
-    .chat-messages{flex:1;overflow-y:auto;padding:6px 10px;display:flex;flex-direction:column;gap:3px;-webkit-overflow-scrolling:touch}
+    .chat-toggle{display:flex;align-items:center;justify-content:space-between;padding:5px 12px;background:rgba(0,0,0,.3);cursor:pointer;border-bottom:1px solid rgba(255,255,255,.02);flex-shrink:0}
+    .chat-toggle-label{font-size:10px;font-weight:700;color:rgba(255,255,255,.2);letter-spacing:1px;text-transform:uppercase}
+    .chat-toggle-arrow{font-size:12px;color:rgba(255,255,255,.15);transition:transform .2s}
+    .chat-messages{flex:1;overflow-y:auto;padding:4px 10px;display:flex;flex-direction:column;gap:2px;-webkit-overflow-scrolling:touch}
     .chat-msg{font-size:11px;line-height:1.4;animation:fadeIn .2s ease}
     .chat-msg .name{font-weight:700;margin-right:4px}
     .chat-sys{font-size:10px;color:rgba(192,132,252,.4);font-style:italic}
-    .chat-form{display:flex;gap:4px;padding:6px 10px;border-top:1px solid rgba(255,255,255,.02);flex-shrink:0}
-    .chat-input{flex:1;padding:9px 14px;font-family:'Outfit',sans-serif;font-size:12px;border:1px solid rgba(255,255,255,.04);border-radius:10px;background:rgba(255,255,255,.03);color:#fff;outline:none}
+    .chat-form{display:flex;gap:4px;padding:4px 10px;border-top:1px solid rgba(255,255,255,.02);flex-shrink:0}
+    .chat-input{flex:1;padding:8px 12px;font-family:'Outfit',sans-serif;font-size:12px;border:1px solid rgba(255,255,255,.04);border-radius:10px;background:rgba(255,255,255,.03);color:#fff;outline:none}
     .chat-input:focus{border-color:rgba(192,132,252,.2)}
-    .chat-send{padding:9px 14px;font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;border:none;border-radius:10px;background:rgba(192,132,252,.15);color:var(--purple);cursor:pointer}
+    .chat-send{padding:8px 14px;font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;border:none;border-radius:10px;background:rgba(192,132,252,.15);color:var(--purple);cursor:pointer}
+
+    /* ── MODAL ── */
+    .modal-overlay{display:none;position:fixed;inset:0;z-index:50;background:rgba(6,6,10,.8);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:16px}
+    .modal-overlay.active{display:flex}
+    .modal{background:rgba(20,20,30,.95);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:24px;max-width:380px;width:100%;max-height:80vh;overflow-y:auto;backdrop-filter:blur(20px);animation:popIn .3s ease}
+    .modal h3{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:800;margin-bottom:8px;color:var(--purple)}
+    .modal p{font-size:13px;color:rgba(255,255,255,.6);line-height:1.8;white-space:pre-line;margin-bottom:16px}
+    .modal-close{display:block;width:100%;padding:11px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;border:1.5px solid var(--border);border-radius:12px;background:transparent;color:rgba(255,255,255,.4);cursor:pointer;margin-top:8px}
+    .modal-close:hover{border-color:rgba(255,255,255,.15);color:rgba(255,255,255,.6)}
+
+    /* Keypad in modal */
+    .keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+    .keypad-display{grid-column:1/-1;text-align:center;font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:800;letter-spacing:8px;color:var(--purple);padding:12px;background:rgba(255,255,255,.03);border-radius:12px;border:1px solid rgba(255,255,255,.06);min-height:52px}
+    .keypad-btn{padding:14px;font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;border:1.5px solid rgba(255,255,255,.08);border-radius:12px;background:rgba(255,255,255,.04);color:rgba(255,255,255,.7);cursor:pointer;transition:all .15s}
+    .keypad-btn:hover{background:rgba(255,255,255,.08);color:#fff}
+    .keypad-btn:active{transform:scale(.95)}
+    .keypad-btn.clear{font-size:13px;color:var(--red)}
+    .keypad-btn.submit{background:rgba(192,132,252,.15);color:var(--purple);border-color:rgba(192,132,252,.2);font-size:13px}
+
+    /* Beaker input */
+    .beaker-input{display:flex;gap:12px;justify-content:center;margin:12px 0}
+    .beaker-choice{width:70px;height:90px;border-radius:10px 10px 18px 18px;border:2.5px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:800;color:rgba(255,255,255,.5);cursor:pointer;transition:all .2s;position:relative}
+    .beaker-choice:hover{border-color:rgba(192,132,252,.3)}
+    .beaker-choice.selected{border-color:var(--purple);background:rgba(192,132,252,.1);color:var(--purple)}
+    .beaker-choice .beaker-order{position:absolute;top:-10px;right:-6px;background:var(--purple);color:var(--bg);font-size:10px;font-weight:800;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+    .beaker-slots{display:flex;gap:8px;justify-content:center;margin:8px 0;min-height:30px}
+    .beaker-slot{padding:4px 14px;border-radius:8px;font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:800;background:rgba(192,132,252,.1);color:var(--purple);border:1px solid rgba(192,132,252,.2)}
+
+    /* Safe input */
+    .safe-input{display:flex;gap:16px;justify-content:center;margin:12px 0}
+    .safe-dial{display:flex;flex-direction:column;align-items:center;gap:6px}
+    .safe-dial-btn{width:44px;height:34px;border-radius:10px;border:1.5px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:rgba(255,255,255,.5);font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;font-family:'Space Grotesk',sans-serif}
+    .safe-dial-btn:hover{background:rgba(255,255,255,.08);color:#fff}
+    .safe-dial-display{width:52px;height:60px;border-radius:14px;background:rgba(255,255,255,.04);border:2px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:800;color:var(--orange)}
+    .modal-submit{display:block;width:100%;padding:12px;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;border:none;border-radius:12px;background:linear-gradient(135deg,var(--purple),var(--pink));color:var(--bg);cursor:pointer;transition:transform .1s;margin-top:8px}
+    .modal-submit:active{transform:scale(.97)}
+    .modal-feedback{text-align:center;font-size:13px;font-weight:700;min-height:20px;margin-top:8px}
 
     /* ── OVERLAYS ── */
     .overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(6,6,10,.95);backdrop-filter:blur(10px);align-items:center;justify-content:center;text-align:center;flex-direction:column;padding:24px}
@@ -165,23 +105,25 @@
     .overlay p{color:rgba(255,255,255,.35);font-size:14px;line-height:1.8}
     .overlay .btn{margin-top:20px}
 
-    /* ── PARTICLES ── */
-    .particle{position:fixed;width:8px;height:8px;border-radius:50%;pointer-events:none;z-index:300;animation:particleFly 1s ease-out forwards}
+    /* Mobile joystick */
+    .joystick-zone{display:none;position:fixed;bottom:140px;left:20px;z-index:20}
+    @media(pointer:coarse){.joystick-zone{display:block}}
+    .joystick-base{width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.08);position:relative}
+    .joystick-knob{width:40px;height:40px;border-radius:50%;background:rgba(192,132,252,.3);border:2px solid rgba(192,132,252,.4);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);transition:none}
 
-    /* ── SHAKE ── */
-    @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
-    .shake{animation:shake .4s ease}
+    /* Transition overlay */
+    .room-transition{display:none;position:fixed;inset:0;z-index:60;background:rgba(6,6,10,.98);align-items:center;justify-content:center;flex-direction:column;gap:12px}
+    .room-transition.active{display:flex}
+    .room-transition .rt-emoji{font-size:48px;animation:popIn .5s ease}
+    .room-transition .rt-name{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:800;color:var(--purple)}
+    .room-transition .rt-sub{font-size:13px;color:rgba(255,255,255,.3)}
 
-    /* ── FLASH ── */
-    @keyframes flashGreen{0%{box-shadow:0 0 0 0 rgba(34,197,94,.6)}50%{box-shadow:0 0 40px 10px rgba(34,197,94,.3)}100%{box-shadow:0 0 0 0 transparent}}
-    .flash-green{animation:flashGreen .6s ease}
-
+    /* Animations */
     @keyframes popIn{0%{transform:scale(0);opacity:0}70%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
     @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
-    @keyframes particleFly{0%{opacity:1;transform:translate(0,0) scale(1)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(0)}}
     @keyframes pulse{0%,100%{opacity:.6}50%{opacity:1}}
-
-    .timer-urgent{animation:pulse .5s ease infinite}
+    @keyframes glow{0%,100%{box-shadow:0 0 8px rgba(192,132,252,.3)}50%{box-shadow:0 0 20px rgba(192,132,252,.6)}}
+    .timer-urgent{animation:pulse .5s ease infinite;color:var(--red)!important}
   </style>
 </head>
 <body>
@@ -196,588 +138,867 @@
     <div id="lobby-info"></div>
     <div id="player-list"></div>
     <button class="btn btn-secondary" id="btn-start" style="display:none">EMPEZAR PARTIDA</button>
-    <div class="lobby-hint">Cada jugador ve pistas DIFERENTES &middot; Comunicate por chat<br>3 salas &middot; 2 puzzles cada una &middot; 4 minutos por sala</div>
+    <div class="lobby-hint">
+      Explora la sala, encuentra pistas y resuelve puzzles<br>
+      Cada jugador ve objetos DIFERENTES &middot; Comunicate por chat<br>
+      3 salas &middot; 5 minutos cada una
+    </div>
   </div>
 </div>
 
 <!-- GAME -->
 <div id="game">
   <div class="topbar">
-    <button class="topbar-back" id="btn-back">&larr;</button>
-    <div class="topbar-room" id="room-label">Sala 1</div>
-    <div class="topbar-timer" id="timer-display">4:00</div>
-    <button class="topbar-hint" id="btn-hint">💡 3</button>
+    <div class="topbar-room" id="topbar-room"></div>
+    <div class="topbar-timer" id="topbar-timer">5:00</div>
+    <button class="topbar-hint" id="btn-hint">💡 Pista (3)</button>
   </div>
-  <div class="content">
-    <div class="puzzle-area" id="puzzle-area">
-      <div class="puzzle-title" id="puzzle-title">Cargando...</div>
-      <div class="puzzle-desc" id="puzzle-desc"></div>
-      <div class="puzzle-visual" id="puzzle-visual"></div>
-      <div class="clue-box">
-        <div class="clue-label">Tus pistas secretas</div>
-        <div class="clue-text" id="clue-text">Esperando...</div>
-      </div>
-      <div class="selection-bar" id="selection-bar">
-        <span class="selection-placeholder">Selecciona elementos arriba</span>
-      </div>
-      <div class="action-bar" id="action-bar">
-        <button class="btn-clear" id="btn-clear">LIMPIAR</button>
-        <button class="btn-submit" id="btn-submit">ENVIAR</button>
-      </div>
-      <div class="feedback" id="feedback"></div>
+  <div class="canvas-wrap">
+    <canvas id="gameCanvas"></canvas>
+  </div>
+  <div class="chat" id="chat">
+    <div class="chat-toggle" id="chat-toggle">
+      <span class="chat-toggle-label">Chat</span>
+      <span class="chat-toggle-arrow">▼</span>
     </div>
-    <div class="chat" id="chat">
-      <div class="chat-toggle" id="chat-toggle">
-        <span class="chat-toggle-label">Chat</span>
-        <span class="chat-toggle-arrow">&#9660;</span>
-      </div>
-      <div class="chat-messages" id="chat-messages"></div>
-      <form class="chat-form" id="chat-form">
-        <input type="text" class="chat-input" id="chat-input" placeholder="Escribe mensaje..." maxlength="200" autocomplete="off">
-        <button type="submit" class="chat-send">Enviar</button>
-      </form>
-    </div>
+    <div class="chat-messages" id="chat-messages"></div>
+    <form class="chat-form" id="chat-form">
+      <input type="text" class="chat-input" id="chat-input" placeholder="Escribe aqui..." maxlength="300" autocomplete="off">
+      <button type="submit" class="chat-send">Enviar</button>
+    </form>
   </div>
 </div>
 
-<!-- OVERLAYS -->
-<div class="overlay" id="overlay-room">
-  <h2 id="overlay-room-title"></h2>
-  <p id="overlay-room-text"></p>
+<!-- MODAL for clues/puzzles -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" id="modal-content"></div>
 </div>
 
-<div class="overlay" id="overlay-end">
-  <h2 id="overlay-end-title"></h2>
-  <p id="overlay-end-text"></p>
-  <button class="btn btn-primary" onclick="location.reload()">JUGAR DE NUEVO</button>
+<!-- ROOM TRANSITION -->
+<div class="room-transition" id="room-transition">
+  <div class="rt-emoji" id="rt-emoji"></div>
+  <div class="rt-name" id="rt-name"></div>
+  <div class="rt-sub">Preparense...</div>
+</div>
+
+<!-- WIN OVERLAY -->
+<div class="overlay" id="win-overlay">
+  <h2 style="color:var(--green)">🎉 ESCAPARON!</h2>
+  <p>Completaron las 3 salas y escaparon con exito!</p>
+  <button class="btn btn-primary" id="btn-restart-win">JUGAR DE NUEVO</button>
+</div>
+
+<!-- LOSE OVERLAY -->
+<div class="overlay" id="lose-overlay">
+  <h2 style="color:var(--red)">⏰ TIEMPO!</h2>
+  <p>Se acabo el tiempo. No lograron escapar.</p>
+  <button class="btn btn-primary" id="btn-restart-lose">INTENTAR DE NUEVO</button>
+</div>
+
+<!-- MOBILE JOYSTICK -->
+<div class="joystick-zone" id="joystick-zone">
+  <div class="joystick-base" id="joystick-base">
+    <div class="joystick-knob" id="joystick-knob"></div>
+  </div>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-(function(){
-  // ── SOCKET ──
-  var socket = io('/escape', { transports: ['websocket'] });
-  var joined = false;
-  var selection = [];
-  var currentVisualType = '';
-  var switchStates = [0,0,0,0];
-  var portraitSlots = [null,null,null,null,null];
-  var codeDigits = [0,0,0,0];
-  var currentRoomColor = '#C084FC';
+(function() {
+  'use strict';
 
-  var ROOM_NAMES = ['El Laboratorio', 'La Mansion', 'La Piramide'];
-  var ROOM_COLORS = ['#C084FC','#F472B6','#FB923C'];
+  // ─── Socket ───────────────────────────────────────────────────────
+  var socket = io('/escape');
 
-  // ── DOM ──
+  // ─── DOM refs ─────────────────────────────────────────────────────
   var $lobby = document.getElementById('lobby');
   var $game = document.getElementById('game');
+  var $canvas = document.getElementById('gameCanvas');
+  var ctx = $canvas.getContext('2d');
   var $nameInput = document.getElementById('name-input');
   var $btnJoin = document.getElementById('btn-join');
   var $btnStart = document.getElementById('btn-start');
-  var $playerList = document.getElementById('player-list');
   var $lobbyInfo = document.getElementById('lobby-info');
-  var $roomLabel = document.getElementById('room-label');
-  var $timerDisplay = document.getElementById('timer-display');
+  var $playerList = document.getElementById('player-list');
+  var $topbarRoom = document.getElementById('topbar-room');
+  var $topbarTimer = document.getElementById('topbar-timer');
   var $btnHint = document.getElementById('btn-hint');
-  var $puzzleTitle = document.getElementById('puzzle-title');
-  var $puzzleDesc = document.getElementById('puzzle-desc');
-  var $puzzleVisual = document.getElementById('puzzle-visual');
-  var $clueText = document.getElementById('clue-text');
-  var $selectionBar = document.getElementById('selection-bar');
-  var $btnClear = document.getElementById('btn-clear');
-  var $btnSubmit = document.getElementById('btn-submit');
-  var $feedback = document.getElementById('feedback');
+  var $chat = document.getElementById('chat');
+  var $chatToggle = document.getElementById('chat-toggle');
   var $chatMessages = document.getElementById('chat-messages');
   var $chatForm = document.getElementById('chat-form');
   var $chatInput = document.getElementById('chat-input');
-  var $chatToggle = document.getElementById('chat-toggle');
-  var $chat = document.getElementById('chat');
+  var $modalOverlay = document.getElementById('modal-overlay');
+  var $modalContent = document.getElementById('modal-content');
+  var $roomTransition = document.getElementById('room-transition');
+  var $rtEmoji = document.getElementById('rt-emoji');
+  var $rtName = document.getElementById('rt-name');
+  var $winOverlay = document.getElementById('win-overlay');
+  var $loseOverlay = document.getElementById('lose-overlay');
+  var $joystickBase = document.getElementById('joystick-base');
+  var $joystickKnob = document.getElementById('joystick-knob');
 
-  // ── LOBBY EVENTS ──
-  $btnJoin.onclick = function(){
+  // ─── Game State ───────────────────────────────────────────────────
+  var gameState = null;
+  var myId = null;
+  var joined = false;
+  var keys = {};
+  var joystickDir = { x: 0, y: 0 };
+  var isMobile = 'ontouchstart' in window;
+  var modalOpen = false;
+  var dpr = window.devicePixelRatio || 1;
+
+  // Camera
+  var camera = { x: 0, y: 0, scale: 1, offsetX: 0, offsetY: 0 };
+
+  // Animation
+  var glowPhase = 0;
+  var lastFrameTime = 0;
+
+  // ─── Lobby ────────────────────────────────────────────────────────
+
+  $btnJoin.onclick = function() {
     var name = $nameInput.value.trim() || 'Jugador';
     socket.emit('join', { name: name });
     joined = true;
     $btnJoin.style.display = 'none';
     $nameInput.disabled = true;
-    $btnStart.style.display = 'block';
   };
-  $nameInput.onkeydown = function(e){ if(e.key==='Enter') $btnJoin.click(); };
-  $btnStart.onclick = function(){ socket.emit('start'); };
-  document.getElementById('btn-back').onclick = function(){ location.href = '/'; };
 
-  // ── CHAT ──
-  $chatToggle.onclick = function(){
-    if(window.innerWidth < 768) $chat.classList.toggle('collapsed');
+  $nameInput.onkeydown = function(e) {
+    if (e.key === 'Enter') $btnJoin.click();
   };
-  $chatForm.onsubmit = function(e){
+
+  $btnStart.onclick = function() {
+    socket.emit('start');
+  };
+
+  socket.on('lobby', function(data) {
+    $playerList.innerHTML = '';
+    data.players.forEach(function(p) {
+      var tag = document.createElement('span');
+      tag.className = 'player-tag';
+      tag.style.background = p.color;
+      tag.textContent = p.name;
+      $playerList.appendChild(tag);
+    });
+    if (data.players.length > 0 && joined) {
+      $btnStart.style.display = 'block';
+      $lobbyInfo.textContent = data.players.length + '/4 jugadores';
+    } else {
+      $lobbyInfo.textContent = '';
+    }
+  });
+
+  socket.on('error', function(data) {
+    alert(data.msg);
+  });
+
+  // ─── Game Start ───────────────────────────────────────────────────
+
+  socket.on('gameStart', function(data) {
+    $lobby.classList.add('hidden');
+    $game.classList.add('active');
+    showRoomTransition(data.roomEmoji, data.roomName);
+    resizeCanvas();
+    requestAnimationFrame(gameLoop);
+  });
+
+  socket.on('nextRoom', function(data) {
+    closeModal();
+    showRoomTransition(data.roomEmoji, data.roomName);
+  });
+
+  socket.on('roomSolved', function(data) {
+    // Flash effect
+    $canvas.style.boxShadow = '0 0 60px rgba(34,197,94,.4) inset';
+    setTimeout(function() { $canvas.style.boxShadow = ''; }, 1000);
+  });
+
+  function showRoomTransition(emoji, name) {
+    $rtEmoji.textContent = emoji;
+    $rtName.textContent = name;
+    $roomTransition.classList.add('active');
+    setTimeout(function() {
+      $roomTransition.classList.remove('active');
+    }, 2200);
+  }
+
+  // ─── State Updates ────────────────────────────────────────────────
+
+  socket.on('state', function(data) {
+    gameState = data;
+    myId = data.myId;
+
+    // Update topbar
+    $topbarRoom.textContent = data.roomEmoji + ' ' + data.roomName + ' (' + (data.currentRoom + 1) + '/3)';
+    var mins = Math.floor(data.timer / 60);
+    var secs = data.timer % 60;
+    $topbarTimer.textContent = mins + ':' + (secs < 10 ? '0' : '') + secs;
+    $topbarTimer.className = 'topbar-timer' + (data.timer <= 30 ? ' timer-urgent' : '');
+    $btnHint.textContent = '💡 Pista (' + data.hintsLeft + ')';
+  });
+
+  // ─── Clue / Interaction ───────────────────────────────────────────
+
+  socket.on('clue', function(data) {
+    openClueModal(data);
+  });
+
+  socket.on('tooFar', function() {
+    // Brief flash on canvas
+  });
+
+  socket.on('wrong', function(data) {
+    var fb = document.getElementById('modal-feedback');
+    if (fb) {
+      fb.textContent = data.msg;
+      fb.style.color = 'var(--red)';
+    }
+    // Shake modal
+    var m = document.querySelector('.modal');
+    if (m) { m.classList.add('shake'); setTimeout(function(){ m.classList.remove('shake'); }, 500); }
+  });
+
+  socket.on('hint', function(data) {
+    // Hint shown in chat
+  });
+
+  socket.on('win', function() {
+    $winOverlay.classList.add('active');
+  });
+
+  socket.on('lose', function() {
+    $loseOverlay.classList.add('active');
+  });
+
+  document.getElementById('btn-restart-win').onclick = function() {
+    socket.emit('restart');
+    location.reload();
+  };
+  document.getElementById('btn-restart-lose').onclick = function() {
+    socket.emit('restart');
+    location.reload();
+  };
+
+  // ─── Hint Button ──────────────────────────────────────────────────
+
+  $btnHint.onclick = function() {
+    socket.emit('hint');
+  };
+
+  // ─── Chat ─────────────────────────────────────────────────────────
+
+  $chatToggle.onclick = function() {
+    $chat.classList.toggle('collapsed');
+  };
+
+  $chatForm.onsubmit = function(e) {
     e.preventDefault();
     var msg = $chatInput.value.trim();
-    if(!msg) return;
+    if (!msg) return;
     socket.emit('chat', { msg: msg });
     $chatInput.value = '';
   };
 
-  function addChatMsg(name, color, msg){
-    var el = document.createElement('div');
-    el.className = 'chat-msg';
-    el.innerHTML = '<span class="name" style="color:'+esc(color)+'">'+esc(name)+':</span> '+esc(msg);
-    $chatMessages.appendChild(el);
-    $chatMessages.scrollTop = $chatMessages.scrollHeight;
-  }
-  function addSysMsg(msg){
-    var el = document.createElement('div');
-    el.className = 'chat-sys';
-    el.textContent = msg;
-    $chatMessages.appendChild(el);
-    $chatMessages.scrollTop = $chatMessages.scrollHeight;
-  }
-  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-  // ── HINT ──
-  $btnHint.onclick = function(){ socket.emit('hint'); };
-
-  // ── CLEAR / SUBMIT ──
-  $btnClear.onclick = function(){
-    selection = [];
-    switchStates = [0,0,0,0];
-    portraitSlots = [null,null,null,null,null];
-    codeDigits = [0,0,0,0];
-    updateSelectionDisplay();
-    rerenderVisual();
-  };
-
-  $btnSubmit.onclick = function(){ submitAnswer(); };
-
-  function submitAnswer(){
-    var answer = buildAnswer();
-    if(!answer) return;
-    socket.emit('answer', { answer: answer });
-  }
-
-  function buildAnswer(){
-    if(currentVisualType === 'flasks'){
-      return selection.join(',');
-    } else if(currentVisualType === 'switches'){
-      return switchStates.join('');
-    } else if(currentVisualType === 'portraits'){
-      if(portraitSlots.some(function(s){ return s === null; })) return '';
-      return portraitSlots.join(',');
-    } else if(currentVisualType === 'piano'){
-      return selection.join(',');
-    } else if(currentVisualType === 'balance'){
-      return selection.length > 0 ? selection[0] : '';
-    } else if(currentVisualType === 'code'){
-      return codeDigits.join('');
-    }
-    return '';
-  }
-
-  // ── SELECTION DISPLAY ──
-  function updateSelectionDisplay(){
-    if(currentVisualType === 'switches'){
-      var labels = ['A','B','C','D'];
-      $selectionBar.innerHTML = switchStates.map(function(s,i){
-        return '<span class="selection-item" style="background:rgba('+(s?'34,197,94':'255,255,255')+',0.1);color:'+(s?'#22C55E':'rgba(255,255,255,0.3)')+'">'+labels[i]+':'+(s?'ON':'OFF')+'</span>';
-      }).join('');
-    } else if(currentVisualType === 'portraits'){
-      var filled = portraitSlots.filter(function(s){ return s !== null; }).length;
-      $selectionBar.innerHTML = filled > 0 ? portraitSlots.map(function(s,i){
-        return '<span class="selection-item">'+(i+1)+': '+(s||'?')+'</span>';
-      }).join('') : '<span class="selection-placeholder">Toca un retrato, luego una posicion</span>';
-    } else if(currentVisualType === 'code'){
-      $selectionBar.innerHTML = codeDigits.map(function(d,i){
-        return '<span class="selection-item" style="font-size:16px;min-width:28px;text-align:center">'+d+'</span>';
-      }).join('');
-    } else if(selection.length === 0){
-      $selectionBar.innerHTML = '<span class="selection-placeholder">Selecciona elementos arriba</span>';
+  socket.on('chat', function(data) {
+    var div = document.createElement('div');
+    if (data.name === 'Sistema') {
+      div.className = 'chat-msg chat-sys';
+      div.textContent = data.msg;
     } else {
-      $selectionBar.innerHTML = selection.map(function(s,i){
-        return '<span class="selection-item">'+(i+1)+'. '+s+'</span>';
-      }).join('');
+      div.className = 'chat-msg';
+      div.innerHTML = '<span class="name" style="color:' + data.color + '">' + escapeHtml(data.name) + ':</span>' + escapeHtml(data.msg);
     }
+    $chatMessages.appendChild(div);
+    $chatMessages.scrollTop = $chatMessages.scrollHeight;
+  });
+
+  function escapeHtml(s) {
+    var d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
   }
 
-  // ── VISUAL RENDERERS ──
-  var currentVisualData = null;
-  var selectedPortrait = null;
+  // ─── Modal System ─────────────────────────────────────────────────
 
-  function renderVisual(visual){
-    currentVisualType = visual.type;
-    currentVisualData = visual;
-    selection = [];
-    switchStates = [0,0,0,0];
-    portraitSlots = [null,null,null,null,null];
-    codeDigits = [0,0,0,0];
-    selectedPortrait = null;
-    $puzzleVisual.innerHTML = '';
-    updateSelectionDisplay();
-
-    if(visual.type === 'flasks') renderFlasks(visual);
-    else if(visual.type === 'switches') renderSwitches(visual);
-    else if(visual.type === 'portraits') renderPortraits(visual);
-    else if(visual.type === 'piano') renderPiano(visual);
-    else if(visual.type === 'balance') renderBalance(visual);
-    else if(visual.type === 'code') renderCode(visual);
-  }
-
-  function rerenderVisual(){
-    if(currentVisualData) renderVisual(currentVisualData);
-  }
-
-  // FLASKS
-  function renderFlasks(visual){
+  function openClueModal(data) {
+    modalOpen = true;
     var html = '';
-    visual.flasks.forEach(function(f){
-      html += '<div class="flask" data-id="'+f.id+'" onclick="window._selectFlask(\''+f.id+'\',\''+f.label+'\')" style="background:rgba(255,255,255,.02);">';
-      html += '<div class="flask-num"></div>';
-      html += '<div style="position:absolute;bottom:0;left:0;right:0;height:60%;border-radius:0 0 13px 13px;background:'+f.color+';opacity:.2"></div>';
-      html += '<span class="flask-label" style="position:relative;z-index:1">'+f.label+'</span>';
-      html += '</div>';
-    });
-    $puzzleVisual.innerHTML = html;
-  }
-  window._selectFlask = function(id, label){
-    var idx = selection.indexOf(id);
-    if(idx !== -1){
-      selection.splice(idx, 1);
-    } else {
-      if(selection.length >= 3) return;
-      selection.push(id);
+
+    if (data.type === 'text') {
+      html = '<h3>' + escapeHtml(data.title) + '</h3><p>' + escapeHtml(data.content) + '</p>';
+      html += '<button class="modal-close" onclick="window._closeModal()">Cerrar</button>';
     }
-    // Update flask visuals
-    document.querySelectorAll('.flask').forEach(function(el){
-      var fid = el.dataset.id;
-      var si = selection.indexOf(fid);
-      el.classList.toggle('selected', si !== -1);
-      el.querySelector('.flask-num').textContent = si !== -1 ? (si+1) : '';
-    });
-    updateSelectionDisplay();
-  };
-
-  // SWITCHES
-  function renderSwitches(visual){
-    var html = '<div style="display:flex;gap:20px;justify-content:center">';
-    visual.labels.forEach(function(label, i){
-      html += '<div class="switch-group" data-idx="'+i+'" onclick="window._toggleSwitch('+i+')">';
-      html += '<div class="switch-label">'+label+'</div>';
-      html += '<div class="switch-track"><div class="switch-knob"></div></div>';
-      html += '<div class="switch-status">OFF</div>';
+    else if (data.type === 'keypad4') {
+      html = '<h3>' + escapeHtml(data.title) + '</h3><p>' + escapeHtml(data.content) + '</p>';
+      html += '<div class="keypad">';
+      html += '<div class="keypad-display" id="kp-display"></div>';
+      for (var i = 1; i <= 9; i++) {
+        html += '<button class="keypad-btn" data-num="' + i + '">' + i + '</button>';
+      }
+      html += '<button class="keypad-btn clear" data-num="clear">Borrar</button>';
+      html += '<button class="keypad-btn" data-num="0">0</button>';
+      html += '<button class="keypad-btn submit" data-num="submit">OK</button>';
       html += '</div>';
-    });
-    html += '</div>';
-    $puzzleVisual.innerHTML = html;
-    updateSelectionDisplay();
-  }
-  window._toggleSwitch = function(idx){
-    switchStates[idx] = switchStates[idx] ? 0 : 1;
-    var groups = document.querySelectorAll('.switch-group');
-    groups.forEach(function(g){
-      var i = parseInt(g.dataset.idx);
-      g.classList.toggle('on', switchStates[i] === 1);
-      g.querySelector('.switch-status').textContent = switchStates[i] ? 'ON' : 'OFF';
-    });
-    updateSelectionDisplay();
-  };
-
-  // PORTRAITS
-  function renderPortraits(visual){
-    var html = '<div style="width:100%;max-width:400px">';
-    html += '<div class="portrait-source">';
-    visual.portraits.forEach(function(p){
-      var used = portraitSlots.indexOf(p.id) !== -1;
-      html += '<div class="portrait-card'+(used?' used':'')+'" data-id="'+p.id+'" onclick="window._selectPortrait(\''+p.id+'\')">';
-      html += '<span class="portrait-emoji">'+p.emoji+'</span>';
-      html += '<span class="portrait-name">'+p.label+'</span>';
+      html += '<div class="modal-feedback" id="modal-feedback"></div>';
+      html += '<button class="modal-close" onclick="window._closeModal()">Cerrar</button>';
+    }
+    else if (data.type === 'beakers') {
+      html = '<h3>' + escapeHtml(data.title) + '</h3><p>' + escapeHtml(data.content) + '</p>';
+      html += '<div class="beaker-input">';
+      html += '<div class="beaker-choice" data-beaker="A">A</div>';
+      html += '<div class="beaker-choice" data-beaker="B">B</div>';
+      html += '<div class="beaker-choice" data-beaker="C">C</div>';
       html += '</div>';
-    });
-    html += '</div>';
-    html += '<div class="portrait-slots">';
-    for(var i = 0; i < visual.slots; i++){
-      var filled = portraitSlots[i] !== null;
-      var portrait = filled ? visual.portraits.find(function(p){ return p.id === portraitSlots[i]; }) : null;
-      html += '<div class="portrait-slot'+(filled?' filled':'')+'" data-slot="'+i+'" onclick="window._selectSlot('+i+')">';
-      html += '<span class="slot-num">'+(i+1)+'</span>';
-      if(portrait){
-        html += '<span class="slot-emoji">'+portrait.emoji+'</span>';
-        html += '<span class="slot-name">'+portrait.label+'</span>';
-      } else {
-        html += '?';
+      html += '<div class="beaker-slots" id="beaker-slots"></div>';
+      html += '<button class="modal-submit" id="beaker-submit">Confirmar orden</button>';
+      html += '<div class="modal-feedback" id="modal-feedback"></div>';
+      html += '<button class="modal-close" onclick="window._closeModal()">Cerrar</button>';
+    }
+    else if (data.type === 'safe') {
+      html = '<h3>' + escapeHtml(data.title) + '</h3><p>' + escapeHtml(data.content) + '</p>';
+      html += '<div class="safe-input">';
+      for (var d = 0; d < 3; d++) {
+        html += '<div class="safe-dial">';
+        html += '<button class="safe-dial-btn" data-dial="' + d + '" data-dir="up">&#9650;</button>';
+        html += '<div class="safe-dial-display" id="safe-d' + d + '">0</div>';
+        html += '<button class="safe-dial-btn" data-dial="' + d + '" data-dir="down">&#9660;</button>';
+        html += '</div>';
       }
       html += '</div>';
+      html += '<button class="modal-submit" id="safe-submit">Abrir caja fuerte</button>';
+      html += '<div class="modal-feedback" id="modal-feedback"></div>';
+      html += '<button class="modal-close" onclick="window._closeModal()">Cerrar</button>';
     }
-    html += '</div></div>';
-    $puzzleVisual.innerHTML = html;
-    updateSelectionDisplay();
-  }
-  window._selectPortrait = function(id){
-    // If already placed, remove it
-    var slotIdx = portraitSlots.indexOf(id);
-    if(slotIdx !== -1){
-      portraitSlots[slotIdx] = null;
-      selectedPortrait = null;
-      renderPortraits(currentVisualData);
-      return;
-    }
-    selectedPortrait = id;
-    // Highlight the selected card
-    document.querySelectorAll('.portrait-card').forEach(function(c){
-      c.style.borderColor = c.dataset.id === id ? 'var(--pink)' : '';
-    });
-  };
-  window._selectSlot = function(slotIdx){
-    if(portraitSlots[slotIdx] !== null){
-      // Remove from slot
-      portraitSlots[slotIdx] = null;
-      selectedPortrait = null;
-      renderPortraits(currentVisualData);
-      return;
-    }
-    if(!selectedPortrait) return;
-    portraitSlots[slotIdx] = selectedPortrait;
-    selectedPortrait = null;
-    renderPortraits(currentVisualData);
-  };
 
-  // PIANO
-  function renderPiano(visual){
-    var html = '<div class="piano-container">';
-    visual.notes.forEach(function(n){
-      html += '<div class="piano-key" data-id="'+n.id+'" onclick="window._selectNote(\''+n.id+'\',\''+n.label+'\')">';
-      html += '<span class="piano-key-num"></span>';
-      html += '<span class="piano-key-label">'+n.label+'</span>';
-      html += '</div>';
-    });
-    html += '</div>';
-    $puzzleVisual.innerHTML = html;
-  }
-  window._selectNote = function(id, label){
-    var idx = selection.indexOf(id);
-    if(idx !== -1){
-      selection.splice(idx, 1);
-    } else {
-      if(selection.length >= 4) return;
-      selection.push(id);
-    }
-    // Animate key press
-    var keyEl = document.querySelector('.piano-key[data-id="'+id+'"]');
-    if(keyEl){
-      keyEl.classList.add('playing');
-      setTimeout(function(){ keyEl.classList.remove('playing'); }, 150);
-    }
-    document.querySelectorAll('.piano-key').forEach(function(el){
-      var nid = el.dataset.id;
-      var si = selection.indexOf(nid);
-      el.classList.toggle('selected', si !== -1);
-      el.querySelector('.piano-key-num').textContent = si !== -1 ? (si+1) : '';
-    });
-    updateSelectionDisplay();
-  };
+    $modalContent.innerHTML = html;
+    $modalOverlay.classList.add('active');
 
-  // BALANCE
-  function renderBalance(visual){
-    var html = '<div class="balance-container">';
-    // Comparisons
-    html += '<div class="balance-comparisons">';
-    visual.comparisons.forEach(function(c){
-      html += '<div class="balance-comp">';
-      html += '<span class="heavy">'+c.heavier.emoji+' '+c.heavier.label+'</span>';
-      html += '<span class="vs">&gt;</span>';
-      html += '<span class="light">'+c.lighter.emoji+' '+c.lighter.label+'</span>';
-      html += '</div>';
-    });
-    html += '</div>';
-    // Symbols to select
-    html += '<div class="balance-symbols">';
-    visual.symbols.forEach(function(s){
-      html += '<div class="balance-symbol" data-id="'+s.id+'" onclick="window._selectSymbol(\''+s.id+'\')">';
-      html += '<span class="balance-symbol-emoji">'+s.emoji+'</span>';
-      html += '<span class="balance-symbol-label">'+s.label+'</span>';
-      html += '</div>';
-    });
-    html += '</div></div>';
-    $puzzleVisual.innerHTML = html;
-  }
-  window._selectSymbol = function(id){
-    selection = [id];
-    document.querySelectorAll('.balance-symbol').forEach(function(el){
-      el.classList.toggle('selected', el.dataset.id === id);
-    });
-    updateSelectionDisplay();
-  };
-
-  // CODE
-  function renderCode(visual){
-    var html = '<div class="code-container">';
-    for(var i = 0; i < visual.length; i++){
-      html += '<div class="code-digit">';
-      html += '<div class="code-btn" onclick="window._codeUp('+i+')">&#9650;</div>';
-      html += '<div class="code-display'+(codeDigits[i]>0?' has-value':'')+'" id="code-d-'+i+'">'+codeDigits[i]+'</div>';
-      html += '<div class="code-btn" onclick="window._codeDown('+i+')">&#9660;</div>';
-      html += '</div>';
-    }
-    html += '</div>';
-    $puzzleVisual.innerHTML = html;
-    updateSelectionDisplay();
-  }
-  window._codeUp = function(idx){
-    codeDigits[idx] = (codeDigits[idx] + 1) % 10;
-    var el = document.getElementById('code-d-'+idx);
-    if(el){
-      el.textContent = codeDigits[idx];
-      el.classList.toggle('has-value', codeDigits[idx] > 0);
-    }
-    updateSelectionDisplay();
-  };
-  window._codeDown = function(idx){
-    codeDigits[idx] = (codeDigits[idx] + 9) % 10;
-    var el = document.getElementById('code-d-'+idx);
-    if(el){
-      el.textContent = codeDigits[idx];
-      el.classList.toggle('has-value', codeDigits[idx] > 0);
-    }
-    updateSelectionDisplay();
-  };
-
-  // ── PARTICLES ──
-  function spawnParticles(color, count){
-    var cx = window.innerWidth / 2;
-    var cy = window.innerHeight / 2;
-    for(var i = 0; i < (count||20); i++){
-      var p = document.createElement('div');
-      p.className = 'particle';
-      var angle = (Math.PI * 2 * i) / count;
-      var dist = 80 + Math.random() * 120;
-      var dx = Math.cos(angle) * dist;
-      var dy = Math.sin(angle) * dist;
-      p.style.cssText = 'left:'+cx+'px;top:'+cy+'px;background:'+color+';--dx:'+dx+'px;--dy:'+dy+'px;width:'+(6+Math.random()*6)+'px;height:'+(6+Math.random()*6)+'px';
-      document.body.appendChild(p);
-      setTimeout(function(el){ el.remove(); }, 1100, p);
+    // Wire up interactions
+    if (data.type === 'keypad4') {
+      setupKeypad();
+    } else if (data.type === 'beakers') {
+      setupBeakers();
+    } else if (data.type === 'safe') {
+      setupSafe();
     }
   }
 
-  // ── SOCKET EVENTS ──
+  window._closeModal = function() {
+    closeModal();
+  };
 
-  socket.on('lobby', function(data){
-    $playerList.innerHTML = '';
-    data.players.forEach(function(p){
-      var el = document.createElement('div');
-      el.className = 'player-tag';
-      el.style.background = p.color;
-      el.textContent = p.name;
-      $playerList.appendChild(el);
+  function closeModal() {
+    modalOpen = false;
+    $modalOverlay.classList.remove('active');
+  }
+
+  $modalOverlay.onclick = function(e) {
+    if (e.target === $modalOverlay) closeModal();
+  };
+
+  // Keypad logic
+  function setupKeypad() {
+    var code = '';
+    var display = document.getElementById('kp-display');
+    var btns = $modalContent.querySelectorAll('.keypad-btn');
+    btns.forEach(function(btn) {
+      btn.onclick = function() {
+        var num = btn.getAttribute('data-num');
+        if (num === 'clear') {
+          code = '';
+        } else if (num === 'submit') {
+          if (code.length === 4) {
+            socket.emit('answer', { answer: code });
+          }
+        } else {
+          if (code.length < 4) code += num;
+        }
+        display.textContent = code;
+      };
     });
-    $lobbyInfo.textContent = data.players.length > 0 ? ('Jugadores: ' + data.players.length + '/4') : '';
-    if(joined && data.players.length >= 1) $btnStart.style.display = 'block';
-  });
+  }
 
-  socket.on('gameStart', function(){
-    $lobby.classList.add('hidden');
-    $game.classList.add('active');
-  });
+  // Beaker logic
+  function setupBeakers() {
+    var order = [];
+    var choices = $modalContent.querySelectorAll('.beaker-choice');
+    var slotsDiv = document.getElementById('beaker-slots');
+    var submitBtn = document.getElementById('beaker-submit');
 
-  socket.on('puzzle', function(data){
-    currentRoomColor = ROOM_COLORS[data.room] || '#C084FC';
-    $puzzleTitle.textContent = data.title;
-    $puzzleTitle.style.color = currentRoomColor;
-    $puzzleDesc.textContent = data.desc;
-    $clueText.textContent = data.clues.join('\n');
-    $feedback.textContent = '';
+    function updateDisplay() {
+      slotsDiv.innerHTML = '';
+      order.forEach(function(b) {
+        var s = document.createElement('span');
+        s.className = 'beaker-slot';
+        s.textContent = b;
+        slotsDiv.appendChild(s);
+      });
+      choices.forEach(function(c) {
+        c.classList.toggle('selected', order.indexOf(c.getAttribute('data-beaker')) !== -1);
+      });
+    }
 
-    if(data.visual) renderVisual(data.visual);
-  });
+    choices.forEach(function(c) {
+      c.onclick = function() {
+        var b = c.getAttribute('data-beaker');
+        var idx = order.indexOf(b);
+        if (idx !== -1) {
+          order.splice(idx, 1);
+        } else if (order.length < 3) {
+          order.push(b);
+        }
+        updateDisplay();
+      };
+    });
 
-  socket.on('state', function(data){
-    if(data.phase === 'playing'){
-      var m = Math.floor(data.timer / 60);
-      var s = data.timer % 60;
-      $timerDisplay.textContent = m + ':' + (s < 10 ? '0' : '') + s;
-      var rc = data.roomColor || ROOM_COLORS[data.room] || '#C084FC';
-      if(data.timer <= 20){
-        $timerDisplay.style.color = '#EF4444';
-        $timerDisplay.classList.add('timer-urgent');
-      } else if(data.timer <= 60){
-        $timerDisplay.style.color = '#FBBF24';
-        $timerDisplay.classList.remove('timer-urgent');
-      } else {
-        $timerDisplay.style.color = rc;
-        $timerDisplay.classList.remove('timer-urgent');
+    submitBtn.onclick = function() {
+      if (order.length === 3) {
+        socket.emit('answer', { answer: order.join('') });
       }
-      $roomLabel.textContent = (data.roomEmoji||'') + ' ' + (data.roomName||'');
-      $roomLabel.style.color = rc;
-      $btnHint.textContent = '💡 ' + (data.hints != null ? data.hints : 3);
+    };
+  }
+
+  // Safe logic
+  function setupSafe() {
+    var dials = [0, 0, 0];
+    var dialBtns = $modalContent.querySelectorAll('.safe-dial-btn');
+    var submitBtn = document.getElementById('safe-submit');
+
+    dialBtns.forEach(function(btn) {
+      btn.onclick = function() {
+        var d = parseInt(btn.getAttribute('data-dial'));
+        var dir = btn.getAttribute('data-dir');
+        if (dir === 'up') dials[d] = (dials[d] + 1) % 10;
+        else dials[d] = (dials[d] + 9) % 10;
+        document.getElementById('safe-d' + d).textContent = dials[d];
+      };
+    });
+
+    submitBtn.onclick = function() {
+      socket.emit('answer', { answer: dials.join('') });
+    };
+  }
+
+  // ─── Keyboard Input ───────────────────────────────────────────────
+
+  document.addEventListener('keydown', function(e) {
+    if (modalOpen || document.activeElement === $chatInput) return;
+    keys[e.key.toLowerCase()] = true;
+    // Prevent scrolling with arrows
+    if (['arrowup','arrowdown','arrowleft','arrowright',' '].indexOf(e.key.toLowerCase()) !== -1) {
+      e.preventDefault();
     }
   });
 
-  socket.on('wrong', function(data){
-    $feedback.textContent = data.msg || 'Incorrecto!';
-    $feedback.style.color = '#F87171';
-    $puzzleVisual.classList.add('shake');
-    setTimeout(function(){ $puzzleVisual.classList.remove('shake'); }, 400);
+  document.addEventListener('keyup', function(e) {
+    keys[e.key.toLowerCase()] = false;
   });
 
-  socket.on('solved', function(){
-    $feedback.textContent = 'Puzzle resuelto!';
-    $feedback.style.color = '#4ADE80';
-    $puzzleVisual.classList.add('flash-green');
-    setTimeout(function(){ $puzzleVisual.classList.remove('flash-green'); }, 600);
-    spawnParticles('#22C55E', 25);
-    spawnParticles('#C084FC', 15);
-  });
+  // ─── Mobile Joystick ─────────────────────────────────────────────
 
-  socket.on('roomDone', function(data){
-    var ol = document.getElementById('overlay-room');
-    var title = document.getElementById('overlay-room-title');
-    var text = document.getElementById('overlay-room-text');
-    ol.classList.add('active');
-    if(data.nextRoom < 3){
-      title.textContent = 'SALA COMPLETADA!';
-      title.style.color = '#4ADE80';
-      text.textContent = 'Siguiente: ' + ROOM_NAMES[data.nextRoom];
-    } else {
-      title.textContent = 'SALA COMPLETADA!';
-      title.style.color = '#4ADE80';
-      text.textContent = '';
+  var joystickActive = false;
+  var joystickCenter = { x: 0, y: 0 };
+  var JOYSTICK_MAX = 35;
+
+  if (isMobile) {
+    $joystickBase.addEventListener('touchstart', function(e) {
+      e.preventDefault();
+      joystickActive = true;
+      var rect = $joystickBase.getBoundingClientRect();
+      joystickCenter.x = rect.left + rect.width / 2;
+      joystickCenter.y = rect.top + rect.height / 2;
+      handleJoystickMove(e.touches[0]);
+    });
+
+    document.addEventListener('touchmove', function(e) {
+      if (!joystickActive) return;
+      handleJoystickMove(e.touches[0]);
+    });
+
+    document.addEventListener('touchend', function(e) {
+      if (!joystickActive) return;
+      // Check if joystick touch ended
+      var found = false;
+      for (var i = 0; i < e.touches.length; i++) {
+        var rect = $joystickBase.getBoundingClientRect();
+        var t = e.touches[i];
+        if (t.clientX >= rect.left - 20 && t.clientX <= rect.right + 20 &&
+            t.clientY >= rect.top - 20 && t.clientY <= rect.bottom + 20) {
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        joystickActive = false;
+        joystickDir.x = 0;
+        joystickDir.y = 0;
+        $joystickKnob.style.transform = 'translate(-50%, -50%)';
+      }
+    });
+  }
+
+  function handleJoystickMove(touch) {
+    var dx = touch.clientX - joystickCenter.x;
+    var dy = touch.clientY - joystickCenter.y;
+    var dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist > JOYSTICK_MAX) {
+      dx = dx / dist * JOYSTICK_MAX;
+      dy = dy / dist * JOYSTICK_MAX;
     }
-    spawnParticles('#F472B6', 30);
-    spawnParticles('#FB923C', 20);
-    setTimeout(function(){ ol.classList.remove('active'); }, 2500);
+    joystickDir.x = dx / JOYSTICK_MAX;
+    joystickDir.y = dy / JOYSTICK_MAX;
+    $joystickKnob.style.transform = 'translate(calc(-50% + ' + dx + 'px), calc(-50% + ' + dy + 'px))';
+  }
+
+  // ─── Canvas Click / Tap ───────────────────────────────────────────
+
+  $canvas.addEventListener('click', function(e) {
+    if (!gameState || modalOpen) return;
+    handleCanvasClick(e.clientX, e.clientY);
   });
 
-  socket.on('win', function(){
-    var ol = document.getElementById('overlay-end');
-    var title = document.getElementById('overlay-end-title');
-    var text = document.getElementById('overlay-end-text');
-    ol.classList.add('active');
-    title.textContent = 'ESCAPARON!';
-    title.style.color = '#4ADE80';
-    text.innerHTML = 'Felicitaciones! Resolvieron todos los puzzles.';
-    spawnParticles('#22C55E', 40);
-    spawnParticles('#C084FC', 30);
-    spawnParticles('#F472B6', 20);
+  $canvas.addEventListener('touchstart', function(e) {
+    // Don't handle if it's the joystick area
+    if (joystickActive) return;
+    if (!gameState || modalOpen) return;
+    // Only handle single taps that aren't on joystick
+    if (e.touches.length === 1) {
+      var t = e.touches[0];
+      var jRect = $joystickBase.getBoundingClientRect();
+      if (t.clientX >= jRect.left - 30 && t.clientX <= jRect.right + 30 &&
+          t.clientY >= jRect.top - 30 && t.clientY <= jRect.bottom + 30) return;
+      handleCanvasClick(t.clientX, t.clientY);
+    }
   });
 
-  socket.on('lose', function(){
-    var ol = document.getElementById('overlay-end');
-    var title = document.getElementById('overlay-end-title');
-    var text = document.getElementById('overlay-end-text');
-    ol.classList.add('active');
-    title.textContent = 'TIEMPO AGOTADO';
-    title.style.color = '#EF4444';
-    text.innerHTML = 'No lograron escapar a tiempo...';
+  function handleCanvasClick(clientX, clientY) {
+    if (!gameState || !gameState.objects) return;
+
+    var rect = $canvas.getBoundingClientRect();
+    // Convert screen coords to world coords
+    var canvasX = (clientX - rect.left) * ($canvas.width / dpr / rect.width);
+    var canvasY = (clientY - rect.top) * ($canvas.height / dpr / rect.height);
+    var worldX = (canvasX - camera.offsetX) / camera.scale;
+    var worldY = (canvasY - camera.offsetY) / camera.scale;
+
+    // Find closest interactable object
+    var bestObj = null;
+    var bestDist = Infinity;
+    gameState.objects.forEach(function(obj) {
+      var cx = obj.x + obj.w / 2;
+      var cy = obj.y + obj.h / 2;
+      var d = Math.sqrt((worldX - cx) * (worldX - cx) + (worldY - cy) * (worldY - cy));
+      if (d < bestDist) {
+        bestDist = d;
+        bestObj = obj;
+      }
+    });
+
+    if (bestObj && bestDist < 100) {
+      socket.emit('interact', { objectId: bestObj.id });
+    }
+  }
+
+  // ─── Movement Sending ─────────────────────────────────────────────
+
+  function sendMovement() {
+    if (!gameState || gameState.phase !== 'playing' || modalOpen) return;
+
+    var dx = 0, dy = 0;
+
+    // Keyboard
+    if (keys['w'] || keys['arrowup']) dy -= 1;
+    if (keys['s'] || keys['arrowdown']) dy += 1;
+    if (keys['a'] || keys['arrowleft']) dx -= 1;
+    if (keys['d'] || keys['arrowright']) dx += 1;
+
+    // Joystick
+    if (Math.abs(joystickDir.x) > 0.15) dx += joystickDir.x;
+    if (Math.abs(joystickDir.y) > 0.15) dy += joystickDir.y;
+
+    if (dx !== 0 || dy !== 0) {
+      socket.emit('move', { dx: dx, dy: dy });
+    }
+  }
+
+  var TICK_RATE = 66;
+  setInterval(sendMovement, TICK_RATE);
+
+  // ─── Canvas Rendering ─────────────────────────────────────────────
+
+  function resizeCanvas() {
+    var wrap = $canvas.parentElement;
+    var w = wrap.clientWidth;
+    var h = wrap.clientHeight;
+    $canvas.width = w * dpr;
+    $canvas.height = h * dpr;
+    $canvas.style.width = w + 'px';
+    $canvas.style.height = h + 'px';
+  }
+
+  window.addEventListener('resize', resizeCanvas);
+
+  function gameLoop(time) {
+    requestAnimationFrame(gameLoop);
+    if (!gameState) return;
+
+    var dt = time - lastFrameTime;
+    lastFrameTime = time;
+    glowPhase += dt * 0.003;
+
+    resizeCanvas();
+    var cw = $canvas.width / dpr;
+    var ch = $canvas.height / dpr;
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cw, ch);
+
+    // Compute camera
+    var roomW = gameState.roomWidth || 600;
+    var roomH = gameState.roomHeight || 400;
+
+    // Scale to fit room in canvas with some padding
+    var scaleX = cw / (roomW + 60);
+    var scaleY = ch / (roomH + 60);
+    camera.scale = Math.min(scaleX, scaleY, 2.5);
+
+    // Center the room
+    var scaledW = roomW * camera.scale;
+    var scaledH = roomH * camera.scale;
+    var offsetX = (cw - scaledW) / 2;
+    var offsetY = (ch - scaledH) / 2;
+    camera.offsetX = offsetX;
+    camera.offsetY = offsetY;
+
+    ctx.save();
+    ctx.translate(offsetX, offsetY);
+    ctx.scale(camera.scale, camera.scale);
+
+    drawRoom(roomW, roomH);
+    drawObjects();
+    drawPlayers();
+
+    ctx.restore();
+  }
+
+  function drawRoom(w, h) {
+    // Floor
+    ctx.fillStyle = '#2a2018';
+    ctx.fillRect(0, 0, w, h);
+
+    // Floor tile pattern
+    ctx.strokeStyle = 'rgba(255,255,255,.03)';
+    ctx.lineWidth = 0.5;
+    var tileSize = 40;
+    for (var x = 0; x < w; x += tileSize) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+    }
+    for (var y = 0; y < h; y += tileSize) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+    }
+
+    // Walls
+    var wallThick = 18;
+    ctx.fillStyle = '#1a1a24';
+    ctx.fillRect(0, 0, w, wallThick); // top
+    ctx.fillRect(0, h - wallThick, w, wallThick); // bottom
+    ctx.fillRect(0, 0, wallThick, h); // left
+    ctx.fillRect(w - wallThick, 0, wallThick, h); // right
+
+    // Wall inner edge highlight
+    ctx.strokeStyle = 'rgba(255,255,255,.04)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(wallThick, wallThick, w - wallThick * 2, h - wallThick * 2);
+
+    // Ambient light gradient from center
+    var grd = ctx.createRadialGradient(w/2, h/2, 50, w/2, h/2, w * 0.6);
+    grd.addColorStop(0, 'rgba(255,220,150,.04)');
+    grd.addColorStop(1, 'rgba(0,0,0,.15)');
+    ctx.fillStyle = grd;
+    ctx.fillRect(wallThick, wallThick, w - wallThick * 2, h - wallThick * 2);
+  }
+
+  function drawObjects() {
+    if (!gameState || !gameState.objects) return;
+
+    var myPlayer = null;
+    if (gameState.players) {
+      for (var i = 0; i < gameState.players.length; i++) {
+        if (gameState.players[i].id === myId) {
+          myPlayer = gameState.players[i];
+          break;
+        }
+      }
+    }
+
+    gameState.objects.forEach(function(obj) {
+      var cx = obj.x + obj.w / 2;
+      var cy = obj.y + obj.h / 2;
+      var isNear = false;
+
+      if (myPlayer) {
+        var dx = myPlayer.x - cx;
+        var dy = myPlayer.y - cy;
+        var d = Math.sqrt(dx * dx + dy * dy);
+        isNear = d < 60 + Math.max(obj.w, obj.h) / 2;
+      }
+
+      // Glow effect when near
+      if (isNear) {
+        var glowAlpha = 0.15 + Math.sin(glowPhase * 2) * 0.1;
+        ctx.shadowColor = getObjectColor(obj);
+        ctx.shadowBlur = 15 + Math.sin(glowPhase * 2) * 5;
+      }
+
+      // Object background
+      ctx.fillStyle = getObjectBg(obj);
+      roundRect(ctx, obj.x, obj.y, obj.w, obj.h, 8);
+      ctx.fill();
+
+      // Object border
+      ctx.strokeStyle = isNear ? getObjectColor(obj) : 'rgba(255,255,255,.08)';
+      ctx.lineWidth = isNear ? 2 : 1;
+      roundRect(ctx, obj.x, obj.y, obj.w, obj.h, 8);
+      ctx.stroke();
+
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+
+      // Icon
+      ctx.font = Math.min(obj.w, obj.h) * 0.5 + 'px serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(obj.icon, cx, cy - 4);
+
+      // Label
+      ctx.font = '600 8px Outfit, sans-serif';
+      ctx.fillStyle = isNear ? 'rgba(255,255,255,.7)' : 'rgba(255,255,255,.3)';
+      ctx.fillText(obj.label, cx, obj.y + obj.h + 10);
+
+      // Discovered indicator
+      if (obj.discovered) {
+        ctx.fillStyle = 'rgba(34,197,94,.6)';
+        ctx.beginPath();
+        ctx.arc(obj.x + obj.w - 4, obj.y + 4, 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    });
+  }
+
+  function getObjectColor(obj) {
+    if (obj.type === 'puzzle') return '#C084FC';
+    if (obj.type === 'furniture') return '#F59E0B';
+    return 'rgba(255,255,255,.3)';
+  }
+
+  function getObjectBg(obj) {
+    if (obj.type === 'puzzle') return 'rgba(192,132,252,.08)';
+    if (obj.type === 'furniture') return 'rgba(245,158,11,.05)';
+    return 'rgba(255,255,255,.02)';
+  }
+
+  function drawPlayers() {
+    if (!gameState || !gameState.players) return;
+
+    gameState.players.forEach(function(p) {
+      var isMe = p.id === myId;
+
+      // Shadow
+      ctx.fillStyle = 'rgba(0,0,0,.3)';
+      ctx.beginPath();
+      ctx.ellipse(p.x, p.y + 14, 12, 5, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Body
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 14, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Border
+      ctx.strokeStyle = isMe ? '#fff' : 'rgba(255,255,255,.3)';
+      ctx.lineWidth = isMe ? 2.5 : 1;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 14, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Eyes (simple dots)
+      ctx.fillStyle = 'rgba(0,0,0,.5)';
+      ctx.beginPath();
+      ctx.arc(p.x - 4, p.y - 2, 2, 0, Math.PI * 2);
+      ctx.arc(p.x + 4, p.y - 2, 2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Name
+      ctx.font = '700 9px "Space Grotesk", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+
+      // Name background
+      var nameW = ctx.measureText(p.name).width + 8;
+      ctx.fillStyle = 'rgba(0,0,0,.5)';
+      roundRect(ctx, p.x - nameW / 2, p.y - 30, nameW, 14, 4);
+      ctx.fill();
+
+      ctx.fillStyle = isMe ? '#fff' : 'rgba(255,255,255,.6)';
+      ctx.fillText(p.name, p.x, p.y - 18);
+    });
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  // ─── Keyboard shortcut: E or Space to interact with nearest ─────
+
+  document.addEventListener('keydown', function(e) {
+    if (modalOpen || document.activeElement === $chatInput) return;
+    if (e.key === 'e' || e.key === 'E' || e.key === ' ') {
+      if (!gameState || !gameState.objects || !gameState.players) return;
+      var myPlayer = null;
+      for (var i = 0; i < gameState.players.length; i++) {
+        if (gameState.players[i].id === myId) { myPlayer = gameState.players[i]; break; }
+      }
+      if (!myPlayer) return;
+
+      var bestObj = null, bestDist = Infinity;
+      gameState.objects.forEach(function(obj) {
+        var cx = obj.x + obj.w / 2, cy = obj.y + obj.h / 2;
+        var d = Math.sqrt((myPlayer.x - cx) * (myPlayer.x - cx) + (myPlayer.y - cy) * (myPlayer.y - cy));
+        if (d < bestDist) { bestDist = d; bestObj = obj; }
+      });
+      if (bestObj && bestDist < 80) {
+        socket.emit('interact', { objectId: bestObj.id });
+        e.preventDefault();
+      }
+    }
+    // Escape closes modal
+    if (e.key === 'Escape') {
+      closeModal();
+    }
+    // Enter opens chat
+    if (e.key === 'Enter' && !modalOpen) {
+      $chatInput.focus();
+      e.preventDefault();
+    }
   });
 
-  socket.on('chat', function(data){
-    addChatMsg(data.name, data.color, data.msg);
-  });
-
-  socket.on('hint', function(data){
-    addSysMsg('💡 PISTA: ' + data.text);
-  });
-
-  socket.on('error', function(data){
-    addSysMsg('Error: ' + (data.msg || ''));
-  });
+  // Add shake animation
+  var shakeStyle = document.createElement('style');
+  shakeStyle.textContent = '@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}.shake{animation:shake .4s ease}';
+  document.head.appendChild(shakeStyle);
 
 })();
 </script>
