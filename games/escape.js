@@ -4,7 +4,7 @@ module.exports = function (io) {
   var MAX_HINTS = 3;
   var HINT_PENALTY = 30;
   var MAX_CHAT = 100;
-  var TICK_RATE = 66; // ~15fps
+  var TICK_RATE = 33; // ~30fps
   var INTERACT_DIST = 60;
   var PLAYER_SPEED = 3;
   var PLAYER_RADIUS = 14;
@@ -376,47 +376,46 @@ module.exports = function (io) {
 
   // ─── Broadcasting ─────────────────────────────────────────────────
 
+  // Send objects once when entering room (per player)
+  function sendObjectsToPlayer(sid) {
+    if (!state.roomData) return;
+    var visibleObjects = [];
+    state.roomData.objects.forEach(function(obj) {
+      if (canSeeObject(obj, sid)) {
+        visibleObjects.push({
+          id: obj.id, type: obj.type,
+          x: obj.x, y: obj.y, w: obj.w, h: obj.h,
+          label: obj.label, icon: obj.icon
+        });
+      }
+    });
+    io.to(sid).emit('objects', {
+      objects: visibleObjects,
+      roomWidth: state.roomData.width,
+      roomHeight: state.roomData.height,
+      roomName: state.roomData.name,
+      roomEmoji: state.roomData.emoji,
+      currentRoom: state.currentRoom
+    });
+  }
+
   function broadcastGameState() {
     if (!state.roomData) return;
 
-    // Build players array
+    // Build lightweight players array (just positions)
     var players = [];
     state.playerOrder.forEach(function(sid) {
       var p = state.players[sid];
       if (p) {
-        players.push({ id: sid, name: p.name, color: p.color, x: p.x, y: p.y });
+        players.push({ id: sid, n: p.name, c: p.color, x: Math.round(p.x), y: Math.round(p.y) });
       }
     });
 
-    // Per-player state (each player gets their own visible objects)
-    state.playerOrder.forEach(function(sid) {
-      var visibleObjects = [];
-      state.roomData.objects.forEach(function(obj) {
-        if (canSeeObject(obj, sid)) {
-          visibleObjects.push({
-            id: obj.id,
-            type: obj.type,
-            x: obj.x, y: obj.y, w: obj.w, h: obj.h,
-            label: obj.label,
-            icon: obj.icon,
-            discovered: !!(state.discovered[obj.id] && state.discovered[obj.id][sid])
-          });
-        }
-      });
-
-      io.to(sid).emit('state', {
-        phase: state.phase,
-        timer: state.timer,
-        currentRoom: state.currentRoom,
-        roomName: state.roomData.name,
-        roomEmoji: state.roomData.emoji,
-        roomWidth: state.roomData.width,
-        roomHeight: state.roomData.height,
-        hintsLeft: MAX_HINTS - state.hintsUsed,
-        players: players,
-        objects: visibleObjects,
-        myId: sid
-      });
+    // Send slim state to all (no objects - those are sent separately)
+    io.emit('state', {
+      timer: state.timer,
+      hintsLeft: MAX_HINTS - state.hintsUsed,
+      players: players
     });
   }
 
@@ -496,6 +495,8 @@ module.exports = function (io) {
       });
 
       addChat('Sistema', '#C084FC', 'Bienvenidos a "' + room.name + '" ' + room.emoji);
+      // Send objects to each player
+      state.playerOrder.forEach(function(sid) { sendObjectsToPlayer(sid); });
       startTimer();
       startTick();
     });
@@ -505,15 +506,11 @@ module.exports = function (io) {
       var p = state.players[socket.id];
       if (!p || !state.roomData) return;
 
-      var dx = data && typeof data.dx === 'number' ? data.dx : 0;
-      var dy = data && typeof data.dy === 'number' ? data.dy : 0;
-
-      // Normalize diagonal movement
-      var len = Math.sqrt(dx * dx + dy * dy);
-      if (len > 1) { dx /= len; dy /= len; }
-
-      p.x = clamp(p.x + dx * PLAYER_SPEED, PLAYER_RADIUS + 20, state.roomData.width - PLAYER_RADIUS - 20);
-      p.y = clamp(p.y + dy * PLAYER_SPEED, PLAYER_RADIUS + 20, state.roomData.height - PLAYER_RADIUS - 20);
+      // Accept direct position from client (client-predicted) with server clamp
+      if (data && typeof data.x === 'number' && typeof data.y === 'number') {
+        p.x = clamp(data.x, PLAYER_RADIUS + 20, state.roomData.width - PLAYER_RADIUS - 20);
+        p.y = clamp(data.y, PLAYER_RADIUS + 20, state.roomData.height - PLAYER_RADIUS - 20);
+      }
     });
 
     socket.on('interact', function(data) {
@@ -578,6 +575,7 @@ module.exports = function (io) {
                 currentRoom: state.currentRoom
               });
               addChat('Sistema', '#C084FC', 'Entrando a "' + room.name + '" ' + room.emoji);
+              state.playerOrder.forEach(function(sid) { sendObjectsToPlayer(sid); });
               startTimer();
             }
           }, 2500);

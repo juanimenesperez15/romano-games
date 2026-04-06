@@ -326,12 +326,31 @@
 
   // ─── State Updates ────────────────────────────────────────────────
 
-  socket.on('state', function(data) {
-    gameState = data;
-    myId = data.myId;
+  // Objects come once per room
+  socket.on('objects', function(data) {
+    if (gameState) {
+      gameState.objects = data.objects;
+      gameState.roomWidth = data.roomWidth;
+      gameState.roomHeight = data.roomHeight;
+      gameState.roomName = data.roomName;
+      gameState.roomEmoji = data.roomEmoji;
+      gameState.currentRoom = data.currentRoom;
+    }
+    roomW = data.roomWidth || 600;
+    roomH = data.roomHeight || 400;
+    localX = roomW / 2;
+    localY = roomH / 2;
+    $topbarRoom.textContent = (data.roomEmoji||'') + ' ' + (data.roomName||'') + ' (' + ((data.currentRoom||0) + 1) + '/3)';
+  });
 
-    // Update topbar
-    $topbarRoom.textContent = data.roomEmoji + ' ' + data.roomName + ' (' + (data.currentRoom + 1) + '/3)';
+  socket.on('state', function(data) {
+    if (!gameState) gameState = {};
+    gameState.phase = 'playing';
+    gameState.timer = data.timer;
+    gameState.hintsLeft = data.hintsLeft;
+    // Update other players (not self)
+    gameState.players = data.players;
+
     var mins = Math.floor(data.timer / 60);
     var secs = data.timer % 60;
     $topbarTimer.textContent = mins + ':' + (secs < 10 ? '0' : '') + secs;
@@ -703,28 +722,38 @@
 
   // ─── Movement Sending ─────────────────────────────────────────────
 
-  function sendMovement() {
+  // Local player position (client-predicted)
+  var localX = 300, localY = 200;
+  var SPEED = 3;
+  var roomW = 600, roomH = 400;
+
+  function updateLocalMovement() {
     if (!gameState || gameState.phase !== 'playing' || modalOpen) return;
 
     var dx = 0, dy = 0;
-
-    // Keyboard
     if (keys['w'] || keys['arrowup']) dy -= 1;
     if (keys['s'] || keys['arrowdown']) dy += 1;
     if (keys['a'] || keys['arrowleft']) dx -= 1;
     if (keys['d'] || keys['arrowright']) dx += 1;
-
-    // Joystick
     if (Math.abs(joystickDir.x) > 0.15) dx += joystickDir.x;
     if (Math.abs(joystickDir.y) > 0.15) dy += joystickDir.y;
 
     if (dx !== 0 || dy !== 0) {
-      socket.emit('move', { dx: dx, dy: dy });
+      var len = Math.sqrt(dx * dx + dy * dy);
+      if (len > 1) { dx /= len; dy /= len; }
+      localX = Math.max(34, Math.min(roomW - 34, localX + dx * SPEED));
+      localY = Math.max(34, Math.min(roomH - 34, localY + dy * SPEED));
     }
   }
 
-  var TICK_RATE = 66;
-  setInterval(sendMovement, TICK_RATE);
+  // Send position to server at 20fps
+  setInterval(function() {
+    if (!gameState || gameState.phase !== 'playing') return;
+    socket.emit('move', { x: localX, y: localY });
+  }, 50);
+
+  // Run local movement at 60fps
+  setInterval(updateLocalMovement, 16);
 
   // ─── Canvas Rendering ─────────────────────────────────────────────
 
@@ -823,27 +852,14 @@
   function drawObjects() {
     if (!gameState || !gameState.objects) return;
 
-    var myPlayer = null;
-    if (gameState.players) {
-      for (var i = 0; i < gameState.players.length; i++) {
-        if (gameState.players[i].id === myId) {
-          myPlayer = gameState.players[i];
-          break;
-        }
-      }
-    }
-
     gameState.objects.forEach(function(obj) {
       var cx = obj.x + obj.w / 2;
       var cy = obj.y + obj.h / 2;
-      var isNear = false;
 
-      if (myPlayer) {
-        var dx = myPlayer.x - cx;
-        var dy = myPlayer.y - cy;
-        var d = Math.sqrt(dx * dx + dy * dy);
-        isNear = d < 60 + Math.max(obj.w, obj.h) / 2;
-      }
+      var dx = localX - cx;
+      var dy = localY - cy;
+      var d = Math.sqrt(dx * dx + dy * dy);
+      var isNear = d < 60 + Math.max(obj.w, obj.h) / 2;
 
       // Glow effect when near
       if (isNear) {
@@ -899,11 +915,24 @@
     return 'rgba(255,255,255,.02)';
   }
 
+  // Smoothed other players
+  var otherSmooth = {};
   function drawPlayers() {
     if (!gameState || !gameState.players) return;
 
     gameState.players.forEach(function(p) {
       var isMe = p.id === myId;
+      // Use local position for self, smooth for others
+      if (isMe) {
+        p = {id:p.id, n:p.n, c:p.c, x:localX, y:localY, color:p.c||p.color, name:p.n||p.name};
+      } else {
+        if (!otherSmooth[p.id]) otherSmooth[p.id] = {x:p.x,y:p.y};
+        otherSmooth[p.id].x += (p.x - otherSmooth[p.id].x) * 0.3;
+        otherSmooth[p.id].y += (p.y - otherSmooth[p.id].y) * 0.3;
+        p = {id:p.id, x:otherSmooth[p.id].x, y:otherSmooth[p.id].y, color:p.c||p.color, name:p.n||p.name};
+      }
+      p.color = p.color || '#EF4444';
+      p.name = p.name || '?';
 
       // Shadow
       ctx.fillStyle = 'rgba(0,0,0,.3)';
@@ -966,17 +995,11 @@
   document.addEventListener('keydown', function(e) {
     if (modalOpen || document.activeElement === $chatInput) return;
     if (e.key === 'e' || e.key === 'E' || e.key === ' ') {
-      if (!gameState || !gameState.objects || !gameState.players) return;
-      var myPlayer = null;
-      for (var i = 0; i < gameState.players.length; i++) {
-        if (gameState.players[i].id === myId) { myPlayer = gameState.players[i]; break; }
-      }
-      if (!myPlayer) return;
-
+      if (!gameState || !gameState.objects) return;
       var bestObj = null, bestDist = Infinity;
       gameState.objects.forEach(function(obj) {
         var cx = obj.x + obj.w / 2, cy = obj.y + obj.h / 2;
-        var d = Math.sqrt((myPlayer.x - cx) * (myPlayer.x - cx) + (myPlayer.y - cy) * (myPlayer.y - cy));
+        var d = Math.sqrt((localX - cx) * (localX - cx) + (localY - cy) * (localY - cy));
         if (d < bestDist) { bestDist = d; bestObj = obj; }
       });
       if (bestObj && bestDist < 80) {
