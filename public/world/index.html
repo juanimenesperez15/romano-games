@@ -529,13 +529,20 @@ function buildFeaturedCards() {
 function pickCountry(iso) {
   autoJoin();
   selectedCountry = iso;
-  setTimeout(function(){ socket.emit('selectCountry', { country: iso }); }, 100);
+  socket.emit('selectCountry', { country: iso });
   updateSelDisplay();
   buildFeaturedCards();
-  // Re-render search results highlight
   var sr = document.getElementById('countrySearch');
   if (sr.value) sr.dispatchEvent(new Event('input'));
 }
+
+// Re-sync on reconnect
+socket.on('connect', function() {
+  if (joined && document.getElementById('ni')) {
+    socket.emit('join', { name: document.getElementById('ni').value.trim() || 'Lider' });
+    if (selectedCountry) socket.emit('selectCountry', { country: selectedCountry });
+  }
+});
 
 // Search functionality
 document.getElementById('countrySearch').addEventListener('input', function(e) {
@@ -931,7 +938,7 @@ window.sendCommand = function(e) {
   div.textContent = msg;
   el.appendChild(div);
   el.scrollTop = el.scrollHeight;
-  socket.emit('commandCountry', { msg: msg });
+  socket.emit('commandCountry', { msg: msg, country: myCountry });
   inp.value = '';
 };
 

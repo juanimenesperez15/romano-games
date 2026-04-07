@@ -357,9 +357,20 @@ function getCountryChat(sid, countryId, userMsg, callback) {
 }
 
 // ── Global AI Command System: player gives free-text orders, AI handles everything ──
-function commandCountry(sid, command, callback) {
+function commandCountry(sid, command, fallbackCountry, callback) {
   var p = state.players[sid];
-  if (!p || !p.country) return callback({ ok: false, msg: 'No estas en juego' });
+  // Defensive: if player missing, recreate
+  if (!p) {
+    p = state.players[sid] = { name: 'Lider', color: PLAYER_COLORS[0], country: fallbackCountry || null };
+  }
+  // If no country but client passed one, use it
+  if (!p.country && fallbackCountry) {
+    p.country = fallbackCountry;
+    if (state.countries[fallbackCountry] && !state.countries[fallbackCountry].owner) {
+      state.countries[fallbackCountry].owner = sid;
+    }
+  }
+  if (!p.country) return callback({ ok: false, msg: 'Elegi un pais primero (volve al lobby)' });
   var mine = state.countries[p.country];
   if (!mine) return callback({ ok: false, msg: 'Pais no encontrado' });
 
@@ -630,12 +641,21 @@ io.on('connection', function(socket) {
 
   socket.on('selectCountry', function(data) {
     var p = state.players[socket.id];
-    if (!p || state.phase !== 'lobby') return;
+    if (!p) {
+      // Auto-create player if missing (reconnect case)
+      p = state.players[socket.id] = { name: 'Lider', color: PLAYER_COLORS[Object.keys(state.players).length % 4], country: null };
+    }
+    // Allow selecting country during playing phase too if no other player has it
     for (var sid in state.players) {
       if (sid !== socket.id && state.players[sid].country === data.country) return socket.emit('error', { msg: 'Pais ya tomado' });
     }
     p.country = data.country;
+    // If game already running, take ownership
+    if (state.phase === 'playing' && state.countries[data.country] && !state.countries[data.country].owner) {
+      state.countries[data.country].owner = socket.id;
+    }
     broadcastLobby();
+    if (state.phase === 'playing') broadcastGameState();
   });
 
   socket.on('setScenario', function(data) {
@@ -685,7 +705,7 @@ io.on('connection', function(socket) {
   socket.on('commandCountry', function(data) {
     var msg = (data.msg || '').substring(0, 300);
     if (!msg) return;
-    commandCountry(socket.id, msg, function(result) {
+    commandCountry(socket.id, msg, data.country, function(result) {
       socket.emit('commandResult', result);
     });
   });
