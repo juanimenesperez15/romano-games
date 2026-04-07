@@ -430,16 +430,6 @@ function updateSelDisplay() {
 
 document.getElementById('startBtn').onclick = function() { socket.emit('start'); };
 
-document.getElementById('countrySelect').addEventListener('change', function(e) {
-  var iso = e.target.value;
-  if (!iso) return;
-  autoJoin();
-  selectedCountry = iso;
-  setTimeout(function(){ socket.emit('selectCountry', { country: iso }); }, 100);
-  updateSelDisplay();
-  drawMiniMap();
-});
-
 document.querySelectorAll('#difficultyRow .opt').forEach(function(b) {
   b.onclick = function() {
     document.querySelectorAll('#difficultyRow .opt').forEach(function(x){x.classList.remove('sel');});
