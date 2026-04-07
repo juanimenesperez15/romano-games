@@ -51,12 +51,13 @@
     #myCountryHeader{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.1);padding:5px 12px;border-radius:10px}
     #myFlag{font-size:22px;line-height:1}
     #myName{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#fff;white-space:nowrap}
-    #dateLabel{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;flex:1;text-align:center}
-    #timelineBtn{padding:7px 14px;font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;border:none;border-radius:8px;background:#fff;color:#1a1a1a;cursor:pointer;letter-spacing:.3px}
+    #dateBox{display:flex;flex-direction:column;align-items:flex-end;gap:0}
+    #dateLabel{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:800;letter-spacing:.5px}
+    #tickTimer{font-size:9px;color:rgba(255,255,255,.5);font-weight:600;letter-spacing:.5px;text-transform:uppercase}
     #backHome{background:none;border:none;color:rgba(255,255,255,.6);font-size:16px;cursor:pointer;padding:4px}
 
     #mainArea{flex:1;position:relative;overflow:hidden}
-    #mapWrap{position:absolute;inset:0;overflow:hidden;background:#dde6f0}
+    #mapWrap{position:absolute;inset:0;overflow:hidden;background:linear-gradient(180deg,#a8c5db,#a3c0d6)}
     canvas#worldMap{display:block;width:100%;height:100%;cursor:grab}
     canvas#worldMap.grabbing{cursor:grabbing}
 
@@ -200,8 +201,10 @@
       <span id="myFlag">🌍</span>
       <span id="myName">-</span>
     </div>
-    <div id="dateLabel">1/1/1936</div>
-    <button id="timelineBtn" onclick="openTimeline()">⏱ AVANZAR</button>
+    <div id="dateBox">
+      <div id="dateLabel">1/1/1936</div>
+      <div id="tickTimer">próxima semana en 30s</div>
+    </div>
   </div>
   <div id="mainArea">
     <div id="mapWrap"><canvas id="worldMap"></canvas></div>
@@ -318,17 +321,17 @@ var WORLD_GEO = null;
 var WORLD_LOADED = false;
 var COUNTRY_CENTROIDS = {};
 
-// Country palette - unique color per country (deterministic from ID)
+// Premium country palette - rich, distinct colors with great contrast
 var COLOR_PALETTE = [
-  '#FFB3BA','#FFDFBA','#FFFFBA','#BAFFC9','#BAE1FF',
-  '#D7BAFF','#FFBAE1','#BAFFE1','#FFE4BA','#C9BAFF',
-  '#FFCCBC','#F8BBD0','#E1BEE7','#C5CAE9','#BBDEFB',
-  '#B2EBF2','#B2DFDB','#C8E6C9','#DCEDC8','#FFF9C4',
-  '#FFECB3','#FFE0B2','#D7CCC8','#CFD8DC','#FFCDD2',
-  '#F0F4C3','#FFAB91','#FFCC80','#FFE082','#A5D6A7'
+  '#E8B4B8','#E7C3A6','#D9C589','#A8C49C','#88B5C9',
+  '#A89BC4','#C9A0C2','#9FBFA9','#D4B080','#B5A8D2',
+  '#D49595','#C8A3B8','#B091B5','#9BA8C4','#8FB4D4',
+  '#94B8B8','#9DB8A3','#A8C99A','#C5C89A','#DBCB8E',
+  '#DBC080','#D4A878','#B8A89A','#A8AEB5','#D49595',
+  '#C5C58A','#D4A088','#D4AC80','#D4BB85','#9DC4A0'
 ];
 function colorForCountry(iso) {
-  if (!iso) return '#e0e0e0';
+  if (!iso) return '#d8d8da';
   var hash = 0;
   for (var i = 0; i < iso.length; i++) hash = (hash * 31 + iso.charCodeAt(i)) | 0;
   return COLOR_PALETTE[Math.abs(hash) % COLOR_PALETTE.length];
@@ -517,6 +520,29 @@ function buildScenarios() {
 }
 
 var FEATURED = [];
+var nextTickAt = 0, tickInterval = 30000;
+setInterval(function(){
+  if (!nextTickAt || !gameState) return;
+  var remaining = Math.max(0, Math.ceil((nextTickAt - Date.now())/1000));
+  document.getElementById('tickTimer').textContent = 'proxima semana en ' + remaining + 's';
+}, 500);
+
+socket.on('summary', function(d) {
+  // Show summary as toast/highlight in log
+  var el = document.getElementById('log');
+  if (!el) return;
+  var div = document.createElement('div');
+  div.className = 'lmsg';
+  div.style.background = '#f5f0ff';
+  div.style.borderLeft = '3px solid #8b5cf6';
+  div.style.padding = '6px 8px';
+  div.style.margin = '4px 0';
+  div.style.borderRadius = '4px';
+  div.style.color = '#1a1a1a';
+  div.innerHTML = '<b>📜 ' + esc(d.date) + '</b><br>' + esc(d.text);
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+});
 socket.on('lobby', function(data) {
   COUNTRIES = data.countries;
   SCENARIOS_LIST = data.scenarios || [];
@@ -624,6 +650,11 @@ socket.on('state', function(s) {
   gameState = s;
   ALIASES = s.aliases || {};
   document.getElementById('dateLabel').textContent = s.currentDate || '-';
+  // Sync countdown
+  if (s.nextTickAt) {
+    nextTickAt = s.nextTickAt;
+    tickInterval = s.tickInterval || 30000;
+  }
   // Server now sends myCountry directly
   myCountry = s.myCountry || null;
   if (!myCountry) {
@@ -737,8 +768,24 @@ function drawWorldMap() {
   if (!gameState) return;
   var w = wmCvs.width / dpr, h = wmCvs.height / dpr;
   wmCtx.setTransform(dpr,0,0,dpr,0,0);
-  wmCtx.fillStyle = '#dde6f0';
-  wmCtx.fillRect(0,0,w,h);
+
+  // Premium ocean gradient
+  var oceanGrad = wmCtx.createLinearGradient(0, 0, 0, h);
+  oceanGrad.addColorStop(0, '#a8c5db');
+  oceanGrad.addColorStop(0.5, '#b9d2e3');
+  oceanGrad.addColorStop(1, '#a3c0d6');
+  wmCtx.fillStyle = oceanGrad;
+  wmCtx.fillRect(0, 0, w, h);
+
+  // Subtle ocean texture (lat lines)
+  wmCtx.strokeStyle = 'rgba(255,255,255,.05)';
+  wmCtx.lineWidth = 1;
+  for (var lat = 0; lat < h; lat += 30) {
+    wmCtx.beginPath();
+    wmCtx.moveTo(0, lat);
+    wmCtx.lineTo(w, lat);
+    wmCtx.stroke();
+  }
 
   var ownedColors = {};
   for (var cid in gameState.countries) {
@@ -746,20 +793,35 @@ function drawWorldMap() {
     if (data.owner && gameState.players[data.owner]) {
       ownedColors[cid] = gameState.players[data.owner].color;
     } else if (data.controlledBy) {
-      ownedColors[cid] = '#7a8aa8';
+      ownedColors[cid] = '#8a9ab8';
     }
   }
-  if (inspectCountry) ownedColors[inspectCountry] = '#1a1a1a';
+  if (inspectCountry) ownedColors[inspectCountry] = '#2a2a3a';
 
-  // Apply pan/zoom transform on top of the map area
   wmCtx.save();
   wmCtx.translate(mapTransform.x + mapOffX, mapTransform.y + mapOffY);
   wmCtx.scale(mapTransform.scale, mapTransform.scale);
 
-  // Draw countries within mapDrawW x mapDrawH area
   if (WORLD_LOADED) {
-    wmCtx.lineWidth = 0.5 / mapTransform.scale;
-    wmCtx.strokeStyle = 'rgba(0,0,0,.3)';
+    // Country shadows (subtle drop shadow effect)
+    wmCtx.fillStyle = 'rgba(40,55,75,.18)';
+    for (var iso0 in WORLD_GEO) {
+      var polys0 = WORLD_GEO[iso0];
+      polys0.forEach(function(ring) {
+        wmCtx.beginPath();
+        ring.forEach(function(pt, i) {
+          var x = (pt[0]/1000)*mapDrawW + 1.5/mapTransform.scale;
+          var y = (pt[1]/500)*mapDrawH + 1.5/mapTransform.scale;
+          if (i===0) wmCtx.moveTo(x,y); else wmCtx.lineTo(x,y);
+        });
+        wmCtx.closePath();
+        wmCtx.fill();
+      });
+    }
+
+    // Country fills
+    wmCtx.lineWidth = 0.6 / mapTransform.scale;
+    wmCtx.strokeStyle = 'rgba(60,75,95,.55)';
     for (var iso in WORLD_GEO) {
       var polys = WORLD_GEO[iso];
       var fill = ownedColors[iso] || colorForCountry(iso);
@@ -776,7 +838,8 @@ function drawWorldMap() {
         wmCtx.stroke();
       });
     }
-    // Country labels with army count
+
+    // Country names (always visible, premium label style)
     COUNTRIES.forEach(function(c) {
       var data = gameState.countries[c.id];
       if (!data) return;
@@ -784,15 +847,22 @@ function drawWorldMap() {
       if (!ctr) return;
       var x = (ctr[0]/1000)*mapDrawW;
       var y = (ctr[1]/500)*mapDrawH;
-      var label = c.id;
-      var showLabel = (data.army > 100 || c.id === inspectCountry || c.id === myCountry);
-      if (showLabel) {
-        wmCtx.font = '700 ' + (10/mapTransform.scale) + 'px Outfit';
+      var alias = (gameState.aliases || {})[c.id];
+      var label = (alias && alias.name) || c.name;
+      var fontSize = Math.max(7, 11/mapTransform.scale);
+      // Only show label if zoomed in enough OR major country OR selected
+      var minScale = label.length > 10 ? 1.5 : (label.length > 6 ? 1.0 : 0.8);
+      if (mapTransform.scale >= minScale || c.id === inspectCountry || c.id === myCountry) {
+        wmCtx.font = '700 ' + fontSize + 'px Outfit';
         wmCtx.textAlign = 'center';
-        wmCtx.lineWidth = 3/mapTransform.scale;
-        wmCtx.strokeStyle = 'rgba(255,255,255,.9)';
-        wmCtx.fillStyle = 'rgba(0,0,0,.85)';
+        wmCtx.textBaseline = 'middle';
+        // Text outline (white)
+        wmCtx.lineWidth = 4/mapTransform.scale;
+        wmCtx.strokeStyle = 'rgba(255,255,255,.85)';
+        wmCtx.lineJoin = 'round';
         wmCtx.strokeText(label, x, y);
+        // Text fill (dark)
+        wmCtx.fillStyle = 'rgba(20,30,45,.95)';
         wmCtx.fillText(label, x, y);
       }
     });

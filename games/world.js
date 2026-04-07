@@ -20,6 +20,9 @@ module.exports = function(io) {
 
 var MAX_PLAYERS = 4;
 var GAME_DURATION_DAYS = 365 * 5; // Total game duration: 5 years
+var TICK_INTERVAL_MS = 30000; // 30 sec = 1 week
+var DAYS_PER_TICK = 7;
+var SUMMARY_EVERY_TICKS = 4; // AI summary every 4 weeks (2 min)
 
 var state = resetState();
 
@@ -31,6 +34,9 @@ function resetState() {
     players: {},
     countries: {},
     daysElapsed: 0,
+    nextTickAt: 0,
+    tickCount: 0,
+    recentEvents: [], // for AI summary
     chat: [],
     log: [],
     winner: null,
@@ -126,6 +132,8 @@ function broadcastGameState() {
       daysElapsed: state.daysElapsed,
       maxDays: GAME_DURATION_DAYS,
       currentDate: dateStr,
+      nextTickAt: state.nextTickAt,
+      tickInterval: TICK_INTERVAL_MS,
       scenario: state.scenario,
       countries: {},
       players: basePlayers,
@@ -188,36 +196,94 @@ function startGame() {
   io.emit('gameStart', { scenario: state.scenario });
   addLog('Inicia partida: ' + SCENARIOS.scenarios[state.scenario].name);
   broadcastGameState();
+  startTicking();
 }
 
-function advanceTime(days) {
-  if (state.phase !== 'playing' || days <= 0) return;
-  days = Math.min(days, 730); // cap at 2 years per advance
+function tickWeek() {
+  if (state.phase !== 'playing') return;
+  var fraction = DAYS_PER_TICK / 365;
 
-  var fraction = days / 365; // fraction of a year
-
-  // Run bots proportional to time (more often for longer advances)
-  var botRuns = Math.max(1, Math.floor(days / 30));
-  for (var b = 0; b < botRuns; b++) runBotsTurn();
-
-  // Resolve combats
+  runBotsTurn();
   resolveCombats();
 
-  // Economy income proportional
   for (var cid in state.countries) {
     var c = state.countries[cid];
     c.eco += Math.floor(c.ecoIncome * fraction);
     c.ecoIncome = Math.floor(c.eco * 0.05) + (c.industry * 5) + 10;
-    if (c.morale < 100) c.morale = Math.min(100, c.morale + Math.floor(2 * fraction));
+    if (c.morale < 100) c.morale = Math.min(100, c.morale + 1);
   }
 
-  state.daysElapsed += days;
+  state.daysElapsed += DAYS_PER_TICK;
+  state.tickCount++;
+  state.nextTickAt = Date.now() + TICK_INTERVAL_MS;
+
   if (state.daysElapsed >= GAME_DURATION_DAYS) {
     endGame();
     return;
   }
+
   broadcastGameState();
-  io.emit('turnEnd', { date: fmtDate(getCurrentDate()) });
+
+  // Generate AI global summary every N ticks
+  if (state.tickCount % SUMMARY_EVERY_TICKS === 0) {
+    generateGlobalSummary();
+  }
+}
+
+var tickInterval = null;
+function startTicking() {
+  if (tickInterval) clearInterval(tickInterval);
+  state.nextTickAt = Date.now() + TICK_INTERVAL_MS;
+  tickInterval = setInterval(tickWeek, TICK_INTERVAL_MS);
+}
+function stopTicking() {
+  if (tickInterval) { clearInterval(tickInterval); tickInterval = null; }
+}
+
+function generateGlobalSummary() {
+  if (!anthropic) {
+    // Simple fallback summary
+    var alivePowers = [];
+    for (var cid in state.countries) {
+      var c = state.countries[cid];
+      if (c.army > 200) alivePowers.push(c.displayName);
+    }
+    var msg = '📜 Resumen: Las potencias actuales son ' + alivePowers.slice(0,5).join(', ') + '. El mundo continua su curso.';
+    io.emit('summary', { date: fmtDate(getCurrentDate()), text: msg });
+    addLog(msg);
+    return;
+  }
+
+  // Build context
+  var countriesInfo = [];
+  for (var cid2 in state.countries) {
+    var c2 = state.countries[cid2];
+    if (c2.army > 100 || c2.owner) {
+      var info = c2.displayName;
+      if (c2.war.length) info += ' (en guerra: ' + c2.war.slice(0,3).join(',') + ')';
+      if (c2.allies.length) info += ' (alianzas: ' + c2.allies.slice(0,3).join(',') + ')';
+      countriesInfo.push(info);
+    }
+  }
+
+  var sysPrompt = 'Sos un narrador historico del mundo en ' + (state.scenario === '1936' ? '1936-1940' : '2026-2030') + '. ' +
+    'Generas un resumen breve (2-3 oraciones, dramatico, en español) de lo que paso en las ultimas 4 semanas en el mundo, basado en el estado actual. ' +
+    'Fecha: ' + fmtDate(getCurrentDate()) + '. ' +
+    'Estado: ' + countriesInfo.slice(0, 12).join('; ') + '. ' +
+    'NO menciones numeros exactos. Foca en eventos politicos, militares, diplomaticos importantes. Tono periodistico.';
+
+  anthropic.messages.create({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 250,
+    system: sysPrompt,
+    messages: [{ role: 'user', content: 'Que paso esta semana en el mundo?' }]
+  }).then(function(resp) {
+    var text = resp.content[0].text || 'El mundo continua su curso.';
+    io.emit('summary', { date: fmtDate(getCurrentDate()), text: text });
+    addLog('📜 ' + text);
+  }).catch(function(err) {
+    console.error('Summary error:', err.message);
+  });
 }
 
 function applyAction(sid, action) {
@@ -630,6 +696,7 @@ function ruleBasedReply(country, mine, msg, status) {
 
 function endGame() {
   state.phase = 'ended';
+  stopTicking();
   var scores = [];
   for (var cid in state.countries) {
     var c = state.countries[cid];
@@ -721,11 +788,7 @@ io.on('connection', function(socket) {
     applyAction(socket.id, data);
   });
 
-  socket.on('advanceTime', function(data) {
-    if (state.phase !== 'playing') return;
-    var days = parseInt(data && data.days) || 365;
-    advanceTime(days);
-  });
+  // (auto-advance now - no manual nextTurn)
 
   socket.on('countryChat', function(data) {
     var msg = (data.msg || '').substring(0, 300);
