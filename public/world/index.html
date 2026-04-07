@@ -963,12 +963,14 @@ function updatePanel(cid) {
     if (ctrlData) ownerName = 'Colonia de ' + ctrlData.displayName;
   }
 
-  var stats = document.getElementById('panelStats');
-  stats.innerHTML =
-    '<div class="stat"><span>Lider</span><span class="v">'+ownerName+'</span></div>'+
-    '<div class="stat"><span>⚔️ Ejercito</span><span class="v">'+(data.armyApprox||'?')+'</span></div>'+
-    '<div class="stat"><span>🤝 Aliados</span><span class="v">'+(data.allies.length?data.allies.join(', '):'-')+'</span></div>'+
-    '<div class="stat"><span>⚡ Guerra con</span><span class="v">'+(data.war.length?data.war.join(', '):'-')+'</span></div>';
+  var statusLines = [];
+  statusLines.push('Lider: ' + ownerName);
+  if (data.allies && data.allies.length) statusLines.push('Aliados: ' + data.allies.join(', '));
+  if (data.war && data.war.length) statusLines.push('En guerra con: ' + data.war.join(', '));
+
+  document.getElementById('panelStats').innerHTML =
+    '<div style="font-size:12px;color:rgba(0,0,0,.6);line-height:1.7;padding:4px 0">' +
+    statusLines.join('<br>') + '</div>';
 }
 
 function addBtn(parent, txt, fn) {
@@ -1024,11 +1026,10 @@ window.showCompactPopup = function(iso) {
     var ctrlData = gameState.countries[data.controlledBy];
     if (ctrlData) ownerName = 'Colonia de ' + ctrlData.displayName;
   }
-  document.getElementById('cpInfo').innerHTML =
-    '<b>Lider:</b> '+ownerName+'<br>'+
-    '<b>Ejercito:</b> '+(data.armyApprox||'?')+'<br>'+
-    (data.allies.length?'<b>Aliados:</b> '+data.allies.join(', ')+'<br>':'')+
-    (data.war.length?'<b>Guerra:</b> '+data.war.join(', '):'');
+  var info = '<b>'+ownerName+'</b>';
+  if (data.allies && data.allies.length) info += '<br>Aliados: ' + data.allies.join(', ');
+  if (data.war && data.war.length) info += '<br>Guerra: ' + data.war.join(', ');
+  document.getElementById('cpInfo').innerHTML = info;
   document.getElementById('compactPopup').classList.add('show');
 };
 
@@ -1058,8 +1059,11 @@ window.openMyActions = function() {
   var alias = ALIASES[myCountry];
   document.getElementById('amFlag').textContent = (alias && alias.flag) || c.flag;
   document.getElementById('amName').textContent = (alias && alias.name) || c.name;
-  document.getElementById('amStats').textContent =
-    '💰 '+data.eco+' | ⚔️ '+data.army+' | ⚓ '+(data.navy||0)+' | 🏭 '+(data.industry||0)+' | 🛡️ '+(data.defense||0)+' | 🔬 '+data.tech;
+  // Show only relational status, no exact numbers
+  var status = [];
+  if (data.allies && data.allies.length) status.push('Aliados: ' + data.allies.join(', '));
+  if (data.war && data.war.length) status.push('En guerra con: ' + data.war.join(', '));
+  document.getElementById('amStats').innerHTML = status.length ? status.join(' · ') : 'Sin compromisos diplomaticos';
   document.getElementById('actionsModal').classList.add('show');
   setTimeout(function(){
     var inp = document.getElementById('cmdInput');
