@@ -166,171 +166,94 @@ var gameState = null;
 var hoveredCountry = null;
 var inspectCountry = null;
 
-// ── Continent shapes (detailed world map outlines, in 1000x500 space) ──
-// Coordinates from real lat/lon projected equirectangular: x=(lon+180)/360*1000, y=(90-lat)/180*500
-var CONTINENTS = [
-  // ── North America ──
-  [
-    [55,70],[80,55],[110,50],[140,52],[170,55],[200,55],[230,55],[260,58],[285,55],
-    [305,52],[320,55],[330,65],[332,80],[330,95],[325,110],[315,118],[310,130],[315,138],
-    [305,145],[295,148],[290,155],[285,150],[280,160],[278,170],[280,180],[278,185],
-    [270,182],[265,175],[255,170],[248,170],[245,175],[238,178],[232,182],[228,180],
-    [225,185],[222,195],[215,200],[212,208],[218,215],[225,218],[232,215],[240,218],
-    [250,220],[258,222],[252,228],[245,230],[238,228],[230,225],[222,222],[218,218],
-    [210,212],[200,205],[195,195],[193,185],[195,175],[200,165],[195,158],[185,155],
-    [178,158],[172,153],[168,145],[165,135],[162,128],[158,120],[152,112],[148,105],
-    [145,98],[138,90],[125,85],[112,82],[100,78],[88,75],[78,72],[68,70]
-  ],
-  // ── Central America ──
-  [
-    [225,200],[235,205],[245,212],[252,220],[258,225],[265,232],[272,238],[278,242],
-    [275,245],[268,242],[262,238],[255,232],[248,225],[242,220],[235,215],[228,210],[225,205]
-  ],
-  // ── Greenland ──
-  [
-    [340,40],[355,38],[372,40],[385,45],[395,55],[400,68],[395,82],[388,92],[378,98],
-    [368,95],[358,90],[348,80],[342,68],[338,55],[338,45]
-  ],
-  // ── South America ──
-  [
-    [285,225],[295,222],[305,220],[315,222],[325,228],[332,235],[338,242],[342,250],
-    [345,260],[348,270],[352,280],[355,290],[358,300],[360,310],[362,320],[360,330],
-    [355,340],[348,348],[342,355],[338,365],[335,375],[330,385],[325,395],[318,402],
-    [312,408],[308,415],[302,418],[298,415],[300,408],[302,400],[300,392],[295,385],
-    [290,378],[286,370],[284,360],[286,350],[288,340],[286,330],[284,320],[282,310],
-    [280,300],[278,290],[276,280],[276,270],[278,260],[280,250],[282,240],[284,232]
-  ],
-  // ── Europe (mainland) ──
-  [
-    [468,150],[475,142],[485,138],[495,135],[505,132],[515,128],[525,128],[535,130],
-    [545,128],[555,128],[565,128],[572,135],[578,142],[582,150],[580,158],[578,165],
-    [575,172],[572,178],[568,182],[562,185],[555,188],[548,190],[542,192],[535,193],
-    [528,193],[522,194],[515,196],[510,198],[505,196],[502,192],[498,190],[493,188],
-    [488,185],[485,180],[482,175],[480,170],[478,165],[475,160],[472,155]
-  ],
-  // ── Scandinavia ──
-  [
-    [505,90],[515,88],[525,90],[532,95],[535,102],[537,110],[538,118],[535,125],
-    [528,128],[520,130],[513,128],[508,123],[505,115],[503,108],[503,100]
-  ],
-  // ── UK + Ireland ──
-  [
-    [475,140],[485,138],[490,142],[493,148],[492,155],[488,160],[483,162],[478,160],
-    [474,155],[472,148]
-  ],
-  // ── Africa ──
-  [
-    [482,205],[492,202],[502,200],[512,200],[522,200],[532,202],[542,205],[552,208],
-    [560,212],[565,218],[568,225],[570,232],[572,240],[575,248],[578,255],[582,262],
-    [585,270],[588,278],[590,285],[588,292],[585,300],[580,308],[575,315],[570,322],
-    [563,330],[555,338],[548,345],[542,352],[535,360],[530,368],[528,375],[525,378],
-    [520,375],[518,368],[515,360],[512,352],[510,345],[508,338],[505,330],[502,322],
-    [500,315],[497,308],[495,300],[492,292],[490,285],[488,278],[485,270],[483,262],
-    [482,255],[481,248],[480,240],[479,232],[479,225],[480,218],[481,212]
-  ],
-  // ── Madagascar ──
-  [
-    [580,300],[585,298],[588,305],[590,315],[589,325],[586,332],[582,335],[580,328],[579,318],[579,308]
-  ],
-  // ── Middle East ──
-  [
-    [552,180],[560,178],[570,178],[580,180],[590,183],[598,188],[605,193],[610,200],
-    [612,208],[610,215],[605,222],[598,225],[590,228],[582,230],[575,228],[568,225],
-    [562,220],[557,213],[554,205],[552,198],[551,190],[551,183]
-  ],
-  // ── Russia / Northern Eurasia ──
-  [
-    [540,80],[560,75],[585,70],[610,68],[635,68],[660,68],[685,70],[710,72],[735,75],
-    [760,78],[780,82],[795,88],[805,95],[810,105],[812,115],[810,125],[805,132],[795,138],
-    [780,142],[765,145],[750,148],[735,150],[720,152],[705,153],[690,154],[675,155],
-    [660,156],[645,157],[630,158],[615,160],[600,158],[590,155],[582,150],[575,145],
-    [570,138],[565,132],[560,125],[555,118],[550,110],[547,102],[545,95],[543,88]
-  ],
-  // ── India / South Asia ──
-  [
-    [615,195],[625,192],[635,193],[645,196],[653,200],[660,205],[665,212],[668,220],
-    [670,228],[668,235],[663,240],[655,242],[647,240],[640,236],[635,230],[632,222],
-    [630,215],[625,208],[620,202]
-  ],
-  // ── China / East Asia ──
-  [
-    [625,140],[645,138],[665,138],[685,140],[705,142],[725,145],[740,150],[748,158],
-    [752,168],[754,178],[750,188],[742,195],[732,200],[720,202],[708,200],[696,196],
-    [684,192],[672,188],[660,182],[650,175],[642,168],[635,160],[630,152],[625,145]
-  ],
-  // ── Korea + Japan area ──
-  [
-    [738,160],[745,158],[752,162],[758,170],[760,180],[755,188],[748,192],[742,188],[738,180],[736,172]
-  ],
-  [
-    [758,162],[768,158],[778,160],[785,170],[788,180],[785,190],[778,195],[770,193],[762,188],[758,178],[757,170]
-  ],
-  // ── SE Asia mainland ──
-  [
-    [688,200],[698,200],[708,205],[715,212],[718,220],[717,228],[713,235],[707,240],
-    [700,238],[695,232],[692,225],[690,218],[689,210]
-  ],
-  // ── Indonesia archipelago ──
-  [
-    [695,260],[710,255],[725,255],[740,258],[755,262],[765,268],[770,275],[768,282],
-    [758,285],[745,283],[732,280],[720,278],[708,275],[700,270]
-  ],
-  // ── Philippines ──
-  [
-    [732,222],[742,220],[748,228],[750,238],[748,248],[742,253],[736,250],[732,242],[731,232]
-  ],
-  // ── Australia ──
-  [
-    [730,308],[745,302],[760,300],[775,302],[790,305],[802,310],[812,318],[818,328],
-    [820,338],[818,348],[812,355],[802,360],[790,362],[778,365],[765,365],[752,362],
-    [740,358],[732,350],[728,340],[727,328],[728,318]
-  ],
-  // ── New Zealand ──
-  [
-    [802,358],[812,355],[818,365],[820,378],[815,388],[808,392],[802,388],[800,378],[800,368]
-  ],
-  // ── Iceland ──
-  [
-    [432,108],[442,106],[450,110],[453,118],[450,124],[442,126],[434,123],[430,116]
-  ],
-  // ── Cuba ──
-  [
-    [275,200],[285,198],[295,200],[300,205],[295,210],[285,210],[278,208]
-  ],
-];
+// ── Real world map data loaded from CDN ──
+// Format: { ISO3: [[[x,y],[x,y],...], [...]] } - one or more polygon rings per country
+var WORLD_GEO = null;
+var WORLD_LOADED = false;
+var COUNTRY_CENTROIDS = {}; // { ISO3: [x, y] }
+
+function project(lon, lat) {
+  return [(lon + 180) / 360 * 1000, (90 - lat) / 180 * 500];
+}
+
+function loadWorldGeo() {
+  // Try multiple CDN sources for reliability
+  var url = 'https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/ne_110m_admin_0_countries.geojson';
+  fetch(url).then(function(r) { return r.json(); }).then(function(data) {
+    WORLD_GEO = {};
+    data.features.forEach(function(f) {
+      var iso = f.properties.ISO_A3 || f.properties.ADM0_A3;
+      if (!iso || iso === '-99') return;
+      var polys = [];
+      var geom = f.geometry;
+      if (!geom) return;
+      if (geom.type === 'Polygon') {
+        polys.push(geom.coordinates[0].map(function(pt){return project(pt[0], pt[1]);}));
+      } else if (geom.type === 'MultiPolygon') {
+        geom.coordinates.forEach(function(poly) {
+          polys.push(poly[0].map(function(pt){return project(pt[0], pt[1]);}));
+        });
+      }
+      WORLD_GEO[iso] = polys;
+      // Compute centroid (simple average of first poly)
+      if (polys[0] && polys[0].length) {
+        var sx = 0, sy = 0;
+        polys[0].forEach(function(p){ sx += p[0]; sy += p[1]; });
+        COUNTRY_CENTROIDS[iso] = [sx / polys[0].length, sy / polys[0].length];
+      }
+    });
+    WORLD_LOADED = true;
+    // Update country positions from centroids
+    COUNTRIES.forEach(function(c) {
+      var ctr = COUNTRY_CENTROIDS[c.id];
+      if (ctr) { c.x = ctr[0]; c.y = ctr[1]; }
+    });
+    drawMiniMap();
+    if (gameState) drawWorldMap();
+  }).catch(function(err) {
+    console.error('Failed to load world map:', err);
+  });
+}
+loadWorldGeo();
 
 // ── Mini map (lobby) ──
 var miniCvs = document.getElementById('miniMap');
 var mctx = miniCvs.getContext('2d');
 
-function drawContinents(ctx, w, h) {
-  // Land fill - lighter than ocean
-  ctx.fillStyle = '#1e2d4a';
-  ctx.strokeStyle = 'rgba(120,180,255,.3)';
-  ctx.lineWidth = 1.2;
-  CONTINENTS.forEach(function(poly) {
-    ctx.beginPath();
-    poly.forEach(function(pt, i) {
-      var x = (pt[0]/1000)*w;
-      var y = (pt[1]/500)*h;
-      if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+function drawContinents(ctx, w, h, ownedColors) {
+  if (!WORLD_LOADED || !WORLD_GEO) {
+    // Loading state
+    ctx.fillStyle = 'rgba(255,255,255,.3)';
+    ctx.font = '12px Outfit';
+    ctx.textAlign = 'center';
+    ctx.fillText('Cargando mapa...', w/2, h/2);
+    return;
+  }
+
+  ctx.lineWidth = 0.8;
+
+  for (var iso in WORLD_GEO) {
+    var polys = WORLD_GEO[iso];
+    var fill = '#1e2d4a';
+    var stroke = 'rgba(120,180,255,.35)';
+    if (ownedColors && ownedColors[iso]) {
+      fill = ownedColors[iso];
+      stroke = 'rgba(255,255,255,.5)';
+    }
+    ctx.fillStyle = fill;
+    ctx.strokeStyle = stroke;
+    polys.forEach(function(ring) {
+      ctx.beginPath();
+      ring.forEach(function(pt, i) {
+        var x = (pt[0]/1000)*w;
+        var y = (pt[1]/500)*h;
+        if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      });
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
     });
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-  });
-  // Add subtle highlights on land
-  ctx.fillStyle = 'rgba(255,255,255,.02)';
-  CONTINENTS.forEach(function(poly) {
-    ctx.beginPath();
-    poly.forEach(function(pt, i) {
-      var x = (pt[0]/1000)*w;
-      var y = (pt[1]/500)*h - 1;
-      if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-    });
-    ctx.closePath();
-    ctx.fill();
-  });
+  }
 }
 
 function drawMiniMap() {
@@ -542,36 +465,40 @@ function drawWorldMap() {
   wmCtx.fillStyle = '#0a1428';
   wmCtx.fillRect(0,0,w,h);
 
-  // Continents
-  drawContinents(wmCtx, w, h);
+  // Build owned colors map
+  var ownedColors = {};
+  for (var cid in gameState.countries) {
+    var data = gameState.countries[cid];
+    if (data.owner && gameState.players[data.owner]) {
+      ownedColors[cid] = gameState.players[data.owner].color + 'aa';
+    }
+    if (data.war && data.war.length > 0) {
+      // Tinted red for at-war countries
+      if (!ownedColors[cid]) ownedColors[cid] = '#5a2530';
+    }
+  }
 
-  // Countries
+  // Real country polygons
+  drawContinents(wmCtx, w, h, ownedColors);
+
+  // Country markers (dots) on top
   COUNTRIES.forEach(function(c) {
     var x = (c.x / 1000) * w;
     var y = (c.y / 500) * h;
     var data = gameState.countries[c.id];
     if (!data) return;
-    var size = 6 + Math.min(20, data.army / 30);
-    var color = '#666';
+    var size = 4 + Math.min(8, data.army / 60);
+    var color = '#888';
     if (data.owner) {
       var p = gameState.players[data.owner];
       if (p) color = p.color;
-    } else {
-      // Bot - color by personality (simplified, all gray)
-      color = '#555';
     }
-    // Highlight if war
-    var atWar = data.war && data.war.length > 0;
-    // Body
     wmCtx.beginPath();
     wmCtx.arc(x, y, size, 0, Math.PI*2);
     wmCtx.fillStyle = color;
-    wmCtx.globalAlpha = 0.85;
     wmCtx.fill();
-    wmCtx.globalAlpha = 1;
-    // Border
-    wmCtx.strokeStyle = atWar ? '#EF4444' : 'rgba(255,255,255,.2)';
-    wmCtx.lineWidth = atWar ? 2 : 1;
+    wmCtx.strokeStyle = 'rgba(0,0,0,.4)';
+    wmCtx.lineWidth = 1;
     wmCtx.stroke();
     // Selected
     if (c.id === inspectCountry) {
@@ -582,7 +509,7 @@ function drawWorldMap() {
       wmCtx.stroke();
     }
     // Label (small)
-    if (size > 10 || c.id === inspectCountry) {
+    if (size > 7 || c.id === inspectCountry) {
       wmCtx.font = '700 9px Outfit';
       wmCtx.textAlign = 'center';
       wmCtx.fillStyle = 'rgba(255,255,255,.7)';
