@@ -10,39 +10,51 @@
     body{background:#f5f5f7;font-family:'Outfit',sans-serif;color:#1a1a1a;height:100vh;overflow:hidden;touch-action:manipulation;-webkit-user-select:none;user-select:none}
 
     /* Lobby */
-    #lobby{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:100;background:linear-gradient(135deg,#f0f0f5,#e8e8ee);overflow-y:auto;padding:14px}
+    #lobby{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:100;background:radial-gradient(ellipse at top,#1a2538 0%,#0a1220 50%,#050810 100%);overflow-y:auto;padding:18px}
+    #lobby::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle at 20% 30%,rgba(120,180,220,.06) 0%,transparent 50%),radial-gradient(circle at 80% 70%,rgba(200,160,80,.05) 0%,transparent 50%);pointer-events:none}
     #lobby.h{display:none}
-    .lb{text-align:center;padding:24px 28px;border-radius:20px;background:#fff;border:1px solid rgba(0,0,0,.06);max-width:900px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.08)}
-    .lb h1{font-family:'Space Grotesk',sans-serif;font-size:clamp(24px,5vw,34px);font-weight:800;background:linear-gradient(135deg,#1a1a1a,#4a4a4a);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-    .lb .sub{color:rgba(0,0,0,.4);font-size:9px;letter-spacing:3px;text-transform:uppercase;margin-bottom:18px}
-    #ni{display:block;width:240px;max-width:80vw;margin:0 auto 12px;padding:11px 16px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;border:1.5px solid rgba(0,0,0,.1);border-radius:12px;background:#fff;color:#1a1a1a;text-align:center;outline:none}
-    #ni:focus{border-color:#1a1a1a}
-    .btn{padding:11px 22px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;border:none;border-radius:10px;cursor:pointer}
-    .btn-pri{background:#1a1a1a;color:#fff}
+    .lb{text-align:center;padding:36px 40px;border-radius:24px;background:linear-gradient(180deg,rgba(245,234,212,.98),rgba(232,220,196,.96));border:1px solid rgba(180,140,80,.3);max-width:760px;width:100%;box-shadow:0 30px 80px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.5);position:relative}
+    .lb::before{content:'';position:absolute;top:8px;left:8px;right:8px;bottom:8px;border:1px solid rgba(180,140,80,.25);border-radius:18px;pointer-events:none}
+    .lb h1{font-family:'Cinzel',serif;font-size:clamp(28px,5vw,42px);font-weight:900;color:#3a2818;text-shadow:0 1px 0 rgba(255,255,255,.6),0 2px 4px rgba(0,0,0,.1);letter-spacing:1px;margin-bottom:4px}
+    .lb .sub{color:rgba(58,40,24,.5);font-size:10px;letter-spacing:4px;text-transform:uppercase;margin-bottom:24px;font-weight:600;font-family:'Cinzel',serif}
+    #ni{display:block;width:280px;max-width:80vw;margin:0 auto 16px;padding:13px 20px;font-family:'Cinzel',serif;font-size:16px;font-weight:600;border:1.5px solid rgba(120,80,40,.3);border-radius:12px;background:rgba(255,250,240,.7);color:#2a1810;text-align:center;outline:none;letter-spacing:.5px}
+    #ni:focus{border-color:#5a3a20;background:#fff}
+    .btn{padding:14px 32px;font-family:'Cinzel',serif;font-size:14px;font-weight:700;border:none;border-radius:10px;cursor:pointer;letter-spacing:1px;text-transform:uppercase}
+    .btn-pri{background:linear-gradient(180deg,#3a2515,#1a0e08);color:#f5ead4;box-shadow:0 4px 14px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.15)}
+    .btn-pri:hover{background:linear-gradient(180deg,#4a3020,#2a160a)}
+    .btn-pri:disabled{opacity:.4;cursor:not-allowed}
     .btn-sec{background:#fff;color:#1a1a1a;border:1px solid rgba(0,0,0,.15)}
-    .row{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:8px}
-    .opt{padding:8px 14px;border-radius:8px;border:1.5px solid rgba(0,0,0,.1);background:#fff;color:rgba(0,0,0,.6);cursor:pointer;font-size:11px;font-weight:600;-webkit-tap-highlight-color:transparent}
-    .opt.sel{border-color:#1a1a1a;color:#fff;background:#1a1a1a}
-    .lbl{font-size:9px;text-transform:uppercase;letter-spacing:2px;color:rgba(0,0,0,.45);margin:14px 0 6px;font-weight:700}
+    .row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:8px}
+    .opt{padding:10px 18px;border-radius:10px;border:1.5px solid rgba(120,80,40,.2);background:rgba(255,250,240,.5);color:rgba(58,40,24,.7);cursor:pointer;font-size:12px;font-weight:700;font-family:'Cinzel',serif;-webkit-tap-highlight-color:transparent;transition:all .15s;letter-spacing:.5px}
+    .opt:hover{border-color:rgba(120,80,40,.5);background:rgba(255,250,240,.9)}
+    .opt.sel{border-color:#3a2515;color:#f5ead4;background:linear-gradient(180deg,#3a2515,#1a0e08);box-shadow:0 2px 8px rgba(0,0,0,.2)}
+    .lbl{font-family:'Cinzel',serif;font-size:10px;text-transform:uppercase;letter-spacing:3px;color:rgba(58,40,24,.55);margin:18px 0 8px;font-weight:700}
 
-    #featuredCountries{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:6px auto 12px;max-width:520px}
-    @media(max-width:500px){#featuredCountries{grid-template-columns:repeat(2,1fr)}}
-    .fcard{padding:14px 8px;border-radius:14px;border:2px solid rgba(0,0,0,.08);background:#fff;cursor:pointer;text-align:center;-webkit-tap-highlight-color:transparent;transition:all .15s}
-    .fcard:hover{border-color:#1a1a1a;transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.1)}
-    .fcard.sel{border-color:#1a1a1a;background:#1a1a1a;color:#fff}
-    .fcard .ff{font-size:36px;display:block;line-height:1}
-    .fcard .fn{font-size:11px;font-weight:700;margin-top:4px;display:block}
-    #countrySearch{display:block;width:100%;max-width:340px;margin:8px auto 4px;padding:11px 16px;font-family:'Outfit',sans-serif;font-size:13px;border:1.5px solid rgba(0,0,0,.1);border-radius:10px;background:#fff;color:#1a1a1a;outline:none}
-    #countrySearch:focus{border-color:#1a1a1a}
-    #searchResults{max-width:340px;margin:0 auto 8px;display:flex;flex-direction:column;gap:3px;max-height:180px;overflow-y:auto}
-    .sresult{padding:8px 14px;border-radius:8px;background:#f5f5f7;border:1px solid rgba(0,0,0,.06);cursor:pointer;font-size:12px;display:flex;align-items:center;gap:8px;-webkit-tap-highlight-color:transparent}
-    .sresult:hover{background:#e8e8ee}
-    .sresult.sel{background:#1a1a1a;color:#fff}
-    #selCountry{display:flex;align-items:center;justify-content:center;gap:10px;padding:10px;background:#1a1a1a;border-radius:12px;margin:6px 0;min-height:46px}
-    #selFlag{font-size:32px}
-    #selName{font-weight:700;color:#fff;font-size:14px}
-    #lobbyPlayers{display:flex;gap:5px;justify-content:center;margin:8px 0;flex-wrap:wrap}
-    .lpp{padding:4px 10px;border-radius:8px;font-size:11px;font-weight:600;color:#fff}
+    #featuredCountries{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:8px auto 16px;max-width:600px}
+    @media(max-width:600px){#featuredCountries{grid-template-columns:repeat(2,1fr)}}
+    .fcard{padding:18px 10px;border-radius:14px;border:2px solid rgba(120,80,40,.25);background:linear-gradient(180deg,rgba(255,250,240,.95),rgba(245,235,215,.85));cursor:pointer;text-align:center;-webkit-tap-highlight-color:transparent;transition:all .2s;box-shadow:0 2px 8px rgba(0,0,0,.06);position:relative;overflow:hidden}
+    .fcard:hover{border-color:#5a3a20;transform:translateY(-3px);box-shadow:0 8px 20px rgba(0,0,0,.15)}
+    .fcard.sel{border-color:#3a2515;background:linear-gradient(180deg,#3a2515,#1a0e08);box-shadow:0 6px 16px rgba(0,0,0,.3)}
+    .fcard.sel .fn{color:#f5ead4}
+    .fcard.taken{opacity:.45;cursor:not-allowed;background:repeating-linear-gradient(45deg,rgba(150,100,60,.1),rgba(150,100,60,.1) 8px,rgba(120,80,40,.15) 8px,rgba(120,80,40,.15) 16px)}
+    .fcard.taken .takenBadge{position:absolute;top:4px;right:4px;font-size:8px;background:#3a2515;color:#f5ead4;padding:2px 6px;border-radius:4px;font-family:'Cinzel',serif;font-weight:700}
+    .fcard .fimg{display:flex;justify-content:center;margin-bottom:6px}
+    .fcard .fimg img{height:36px;width:auto;border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+    .fcard .fn{font-family:'Cinzel',serif;font-size:13px;font-weight:700;color:#3a2818;letter-spacing:.3px}
+    #countrySearch{display:block;width:100%;max-width:380px;margin:10px auto 6px;padding:12px 18px;font-family:'Cinzel',serif;font-size:14px;border:1.5px solid rgba(120,80,40,.25);border-radius:10px;background:rgba(255,250,240,.7);color:#2a1810;outline:none}
+    #countrySearch:focus{border-color:#5a3a20;background:#fff}
+    #searchResults{max-width:380px;margin:0 auto 10px;display:flex;flex-direction:column;gap:4px;max-height:200px;overflow-y:auto}
+    .sresult{padding:10px 14px;border-radius:8px;background:rgba(255,250,240,.7);border:1px solid rgba(120,80,40,.15);cursor:pointer;font-size:13px;display:flex;align-items:center;gap:12px;-webkit-tap-highlight-color:transparent;font-family:'Cinzel',serif;font-weight:600;color:#3a2818;transition:all .15s}
+    .sresult:hover{background:rgba(255,250,240,.95);border-color:rgba(120,80,40,.35)}
+    .sresult.sel{background:linear-gradient(180deg,#3a2515,#1a0e08);color:#f5ead4;border-color:#3a2515}
+    .sresult.taken{opacity:.4;cursor:not-allowed}
+    .sresult img{height:20px;width:auto;border-radius:3px;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+    #selCountry{display:flex;align-items:center;justify-content:center;gap:14px;padding:14px 20px;background:linear-gradient(180deg,#3a2515,#1a0e08);border-radius:14px;margin:14px 0;min-height:54px;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+    #selFlag img{height:28px;width:auto;border-radius:3px;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+    #selName{font-family:'Cinzel',serif;font-weight:700;color:#f5ead4;font-size:16px;letter-spacing:.5px}
+    #lobbyPlayers{display:flex;gap:8px;justify-content:center;margin:8px 0;flex-wrap:wrap;min-height:32px}
+    .lpp{padding:6px 14px;border-radius:8px;font-size:12px;font-weight:700;color:#fff;font-family:'Cinzel',serif;display:flex;align-items:center;gap:8px;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+    .lpp img{height:14px;width:auto;border-radius:2px}
 
     /* Game UI */
     #game{display:none;position:fixed;inset:0;flex-direction:column;background:#fff}
@@ -321,6 +333,28 @@ var WORLD_GEO = null;
 var WORLD_LOADED = false;
 var COUNTRY_CENTROIDS = {};
 
+// ISO 3-letter to 2-letter mapping for flag CDN
+var ISO3_TO_2 = {
+  USA:'us',CAN:'ca',MEX:'mx',CUB:'cu',BRA:'br',ARG:'ar',CHL:'cl',PER:'pe',COL:'co',VEN:'ve',URY:'uy',BOL:'bo',
+  GBR:'gb',FRA:'fr',DEU:'de',ITA:'it',ESP:'es',POL:'pl',UKR:'ua',ROU:'ro',NLD:'nl',BEL:'be',PRT:'pt',GRC:'gr',
+  NOR:'no',SWE:'se',FIN:'fi',CHE:'ch',AUT:'at',CZE:'cz',HUN:'hu',SRB:'rs',IRL:'ie',DNK:'dk',
+  RUS:'ru',KAZ:'kz',TUR:'tr',IRN:'ir',IRQ:'iq',SAU:'sa',ISR:'il',SYR:'sy',YEM:'ye',JOR:'jo',ARE:'ae',AFG:'af',PAK:'pk',
+  CHN:'cn',IND:'in',JPN:'jp',KOR:'kr',PRK:'kp',VNM:'vn',THA:'th',IDN:'id',MYS:'my',PHL:'ph',TWN:'tw',MNG:'mn',BGD:'bd',
+  EGY:'eg',LBY:'ly',DZA:'dz',MAR:'ma',TUN:'tn',NGA:'ng',ETH:'et',KEN:'ke',ZAF:'za',SDN:'sd',COD:'cd',AGO:'ao',GHA:'gh',
+  AUS:'au',NZL:'nz'
+};
+function flagUrl(iso3, w) {
+  var iso2 = ISO3_TO_2[iso3];
+  if (!iso2) return '';
+  return 'https://flagcdn.com/w' + (w||80) + '/' + iso2 + '.png';
+}
+function flagImg(iso3, h) {
+  h = h || 24;
+  var url = flagUrl(iso3, h*4);
+  if (!url) return '<span style="font-size:'+(h*0.9)+'px">🌍</span>';
+  return '<img src="'+url+'" style="height:'+h+'px;width:auto;border-radius:3px;box-shadow:0 1px 4px rgba(0,0,0,.3);display:inline-block;vertical-align:middle" alt="">';
+}
+
 // EU4-style saturated palette - rich historical map colors
 var COLOR_PALETTE = [
   '#c44545','#d97a2c','#d4a017','#85a83d','#3e8c4e',
@@ -482,11 +516,11 @@ function updateSelDisplay() {
   var c = COUNTRIES.find(function(x) { return x.id === selectedCountry; });
   if (c) {
     var alias = ALIASES[c.id];
-    document.getElementById('selFlag').textContent = (alias && alias.flag) || c.flag;
+    document.getElementById('selFlag').innerHTML = flagImg(c.id, 28);
     document.getElementById('selName').textContent = (alias && alias.name) || c.name;
   } else {
-    document.getElementById('selFlag').textContent = '🌍';
-    document.getElementById('selName').textContent = 'Sin pais';
+    document.getElementById('selFlag').innerHTML = '<span style="font-size:24px">🌍</span>';
+    document.getElementById('selName').textContent = 'Sin país elegido';
   }
 }
 
@@ -567,34 +601,60 @@ socket.on('lobby', function(data) {
       if (ctr) { c.x = ctr[0]; c.y = ctr[1]; }
     });
   }
-  // Players display
+  // Players display with flags
+  lobbyPlayers = data.players;
   var lp = document.getElementById('lobbyPlayers');
   lp.innerHTML = '';
   data.players.forEach(function(p) {
     var el = document.createElement('div');
     el.className = 'lpp';
     el.style.background = p.color;
-    el.textContent = p.name + (p.country ? ' (' + p.country + ')' : '');
+    var flagHtml = p.country ? flagImg(p.country, 14) + '&nbsp;' : '';
+    el.innerHTML = flagHtml + p.name;
     lp.appendChild(el);
   });
   // Featured cards
   buildFeaturedCards();
   updateSelDisplay();
+  // Re-render search results to update taken state
+  var sr = document.getElementById('countrySearch');
+  if (sr.value) sr.dispatchEvent(new Event('input'));
 });
+
+function getTakenCountries() {
+  var taken = {};
+  if (gameState && gameState.players) {
+    for (var sid in gameState.players) {
+      if (gameState.players[sid].country) taken[gameState.players[sid].country] = gameState.players[sid].name;
+    }
+  }
+  // Also check from lobby data
+  if (lobbyPlayers) {
+    lobbyPlayers.forEach(function(p) {
+      if (p.country) taken[p.country] = p.name;
+    });
+  }
+  return taken;
+}
+
+var lobbyPlayers = [];
 
 function buildFeaturedCards() {
   var cont = document.getElementById('featuredCountries');
   cont.innerHTML = '';
+  var taken = getTakenCountries();
   FEATURED.forEach(function(iso) {
     var c = COUNTRIES.find(function(x){return x.id===iso;});
     if (!c) return;
     var alias = ALIASES[iso];
     var name = (alias && alias.name) || c.name;
-    var flag = (alias && alias.flag) || c.flag;
     var div = document.createElement('div');
-    div.className = 'fcard' + (iso === selectedCountry ? ' sel' : '');
-    div.innerHTML = '<span class="ff">'+flag+'</span><span class="fn">'+name+'</span>';
-    div.onclick = function() { pickCountry(iso); };
+    var isTaken = taken[iso] && iso !== selectedCountry;
+    div.className = 'fcard' + (iso === selectedCountry ? ' sel' : '') + (isTaken ? ' taken' : '');
+    var html = '<div class="fimg">' + flagImg(iso, 36) + '</div><div class="fn">'+name+'</div>';
+    if (isTaken) html += '<div class="takenBadge">TOMADO</div>';
+    div.innerHTML = html;
+    if (!isTaken) div.onclick = function() { pickCountry(iso); };
     cont.appendChild(div);
   });
 }
@@ -623,19 +683,20 @@ document.getElementById('countrySearch').addEventListener('input', function(e) {
   var res = document.getElementById('searchResults');
   res.innerHTML = '';
   if (!q) return;
+  var taken = getTakenCountries();
   var matches = COUNTRIES.filter(function(c) {
     var alias = ALIASES[c.id];
     var name = ((alias && alias.name) || c.name).toLowerCase();
     return name.indexOf(q) !== -1 || c.id.toLowerCase().indexOf(q) !== -1;
-  }).slice(0, 8);
+  }).slice(0, 10);
   matches.forEach(function(c) {
     var alias = ALIASES[c.id];
     var name = (alias && alias.name) || c.name;
-    var flag = (alias && alias.flag) || c.flag;
     var div = document.createElement('div');
-    div.className = 'sresult' + (c.id === selectedCountry ? ' sel' : '');
-    div.innerHTML = '<span style="font-size:18px">'+flag+'</span><span>'+name+'</span>';
-    div.onclick = function() { pickCountry(c.id); };
+    var isTaken = taken[c.id] && c.id !== selectedCountry;
+    div.className = 'sresult' + (c.id === selectedCountry ? ' sel' : '') + (isTaken ? ' taken' : '');
+    div.innerHTML = flagImg(c.id, 20) + '<span>'+name+'</span>' + (isTaken ? ' <span style="margin-left:auto;font-size:9px;color:rgba(0,0,0,.5)">tomado</span>' : '');
+    if (!isTaken) div.onclick = function() { pickCountry(c.id); };
     res.appendChild(div);
   });
 });
@@ -676,11 +737,10 @@ socket.on('state', function(s) {
     var c = COUNTRIES.find(function(x){return x.id===myCountry;});
     if (c) {
       var alias = ALIASES[myCountry];
-      var flag = (alias && alias.flag) || c.flag;
       var name = (alias && alias.name) || c.name;
-      document.getElementById('myFlag').textContent = flag;
+      document.getElementById('myFlag').innerHTML = flagImg(myCountry, 18);
       document.getElementById('myName').textContent = name;
-      document.getElementById('faFlag').textContent = flag;
+      document.getElementById('faFlag').innerHTML = flagImg(myCountry, 18);
     }
   } else {
     fa.style.display = 'none';
@@ -1045,7 +1105,7 @@ function updatePanel(cid) {
   if (!c || !gameState) return;
   var data = gameState.countries[cid];
   var alias = (gameState.aliases || {})[cid];
-  document.getElementById('panelFlag').textContent = (alias && alias.flag) || c.flag;
+  document.getElementById('panelFlag').innerHTML = flagImg(cid, 32);
   document.getElementById('panelName').textContent = data.displayName || c.name;
 
   var ownerName = 'IA (Bot)';
@@ -1095,7 +1155,11 @@ socket.on('commandResult', function(d) {
   var div = document.createElement('div');
   if (d.ok) {
     div.className = 'amm ok';
-    div.innerHTML = '✓ ' + esc(d.narrative || 'Ejecutado');
+    if (d.queued) {
+      div.innerHTML = '⏳ Orden encolada (' + d.count + ' pendientes). Se ejecutara en el proximo tick.';
+    } else {
+      div.innerHTML = '✓ ' + esc(d.narrative || 'Ejecutado');
+    }
   } else {
     div.className = 'amm err';
     div.innerHTML = '✗ ' + esc(d.msg || 'Error');
@@ -1110,7 +1174,7 @@ window.showCompactPopup = function(iso) {
   if (!c) return;
   var data = gameState.countries[iso];
   var alias = ALIASES[iso];
-  document.getElementById('cpFlag').textContent = (alias && alias.flag) || c.flag;
+  document.getElementById('cpFlag').innerHTML = flagImg(iso, 38);
   document.getElementById('cpName').textContent = (alias && alias.name) || c.name;
   var ownerName = 'IA (Bot)';
   if (data.owner && gameState.players[data.owner]) ownerName = gameState.players[data.owner].name;
@@ -1149,7 +1213,7 @@ window.openMyActions = function() {
   if (!c) return;
   var data = gameState.countries[myCountry];
   var alias = ALIASES[myCountry];
-  document.getElementById('amFlag').textContent = (alias && alias.flag) || c.flag;
+  document.getElementById('amFlag').innerHTML = flagImg(myCountry, 32);
   document.getElementById('amName').textContent = (alias && alias.name) || c.name;
   // Show only relational status, no exact numbers
   var status = [];

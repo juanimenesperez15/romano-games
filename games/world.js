@@ -22,7 +22,6 @@ var MAX_PLAYERS = 4;
 var GAME_DURATION_DAYS = 365 * 5; // Total game duration: 5 years
 var TICK_INTERVAL_MS = 30000; // 30 sec = 1 week
 var DAYS_PER_TICK = 7;
-var SUMMARY_EVERY_TICKS = 4; // AI summary every 4 weeks (2 min)
 
 var state = resetState();
 
@@ -36,7 +35,8 @@ function resetState() {
     daysElapsed: 0,
     nextTickAt: 0,
     tickCount: 0,
-    recentEvents: [], // for AI summary
+    recentEvents: [],
+    queuedActions: {}, // sid -> [orders queued during this week]
     chat: [],
     log: [],
     winner: null,
@@ -203,31 +203,65 @@ function tickWeek() {
   if (state.phase !== 'playing') return;
   var fraction = DAYS_PER_TICK / 365;
 
-  runBotsTurn();
-  resolveCombats();
+  // 1. Process queued player actions
+  var queuedSummary = []; // for AI global summary
+  var sids = Object.keys(state.queuedActions);
+  var pendingProcessing = sids.length;
 
-  for (var cid in state.countries) {
-    var c = state.countries[cid];
-    c.eco += Math.floor(c.ecoIncome * fraction);
-    c.ecoIncome = Math.floor(c.eco * 0.05) + (c.industry * 5) + 10;
-    if (c.morale < 100) c.morale = Math.min(100, c.morale + 1);
+  function finishTick() {
+    runBotsTurn();
+    resolveCombats();
+
+    for (var cid in state.countries) {
+      var c = state.countries[cid];
+      c.eco += Math.floor(c.ecoIncome * fraction);
+      c.ecoIncome = Math.floor(c.eco * 0.05) + (c.industry * 5) + 10;
+      if (c.morale < 100) c.morale = Math.min(100, c.morale + 1);
+    }
+
+    state.daysElapsed += DAYS_PER_TICK;
+    state.tickCount++;
+    state.nextTickAt = Date.now() + TICK_INTERVAL_MS;
+
+    if (state.daysElapsed >= GAME_DURATION_DAYS) {
+      endGame();
+      return;
+    }
+
+    broadcastGameState();
+
+    // Generate global summary EVERY tick (focused on player countries)
+    generateGlobalSummary(queuedSummary);
   }
 
-  state.daysElapsed += DAYS_PER_TICK;
-  state.tickCount++;
-  state.nextTickAt = Date.now() + TICK_INTERVAL_MS;
-
-  if (state.daysElapsed >= GAME_DURATION_DAYS) {
-    endGame();
+  if (pendingProcessing === 0) {
+    finishTick();
     return;
   }
 
-  broadcastGameState();
-
-  // Generate AI global summary every N ticks
-  if (state.tickCount % SUMMARY_EVERY_TICKS === 0) {
-    generateGlobalSummary();
-  }
+  // Execute each player's queued actions sequentially
+  sids.forEach(function(sid) {
+    var actions = state.queuedActions[sid];
+    state.queuedActions[sid] = []; // clear
+    var pendingActions = actions.length;
+    if (pendingActions === 0) {
+      pendingProcessing--;
+      if (pendingProcessing === 0) finishTick();
+      return;
+    }
+    actions.forEach(function(act) {
+      commandCountry(sid, act.command, act.country, function(result) {
+        if (result.ok && result.narrative) {
+          queuedSummary.push({ player: act.name, country: act.country, action: act.command, result: result.narrative });
+        }
+        pendingActions--;
+        if (pendingActions === 0) {
+          pendingProcessing--;
+          if (pendingProcessing === 0) finishTick();
+        }
+      });
+    });
+  });
 }
 
 var tickInterval = null;
@@ -240,49 +274,60 @@ function stopTicking() {
   if (tickInterval) { clearInterval(tickInterval); tickInterval = null; }
 }
 
-function generateGlobalSummary() {
+function generateGlobalSummary(playerActions) {
+  playerActions = playerActions || [];
+
   if (!anthropic) {
-    // Simple fallback summary
-    var alivePowers = [];
-    for (var cid in state.countries) {
-      var c = state.countries[cid];
-      if (c.army > 200) alivePowers.push(c.displayName);
+    // Simple fallback summary based on player actions
+    var msg;
+    if (playerActions.length > 0) {
+      msg = playerActions.map(function(a){ return a.player + ' (' + a.country + '): ' + a.result; }).join(' · ');
+    } else {
+      msg = 'La semana transcurre sin grandes movimientos. Los lideres mundiales observan.';
     }
-    var msg = '📜 Resumen: Las potencias actuales son ' + alivePowers.slice(0,5).join(', ') + '. El mundo continua su curso.';
     io.emit('summary', { date: fmtDate(getCurrentDate()), text: msg });
-    addLog(msg);
+    addLog('📜 ' + msg);
     return;
   }
 
-  // Build context
-  var countriesInfo = [];
-  for (var cid2 in state.countries) {
-    var c2 = state.countries[cid2];
-    if (c2.army > 100 || c2.owner) {
-      var info = c2.displayName;
-      if (c2.war.length) info += ' (en guerra: ' + c2.war.slice(0,3).join(',') + ')';
-      if (c2.allies.length) info += ' (alianzas: ' + c2.allies.slice(0,3).join(',') + ')';
-      countriesInfo.push(info);
-    }
+  // Build context focusing on player countries
+  var playerCountries = [];
+  for (var sid in state.players) {
+    var pp = state.players[sid];
+    if (pp.country) playerCountries.push({ name: pp.name, country: pp.country, displayName: state.countries[pp.country] ? state.countries[pp.country].displayName : pp.country });
   }
 
-  var sysPrompt = 'Sos un narrador historico del mundo en ' + (state.scenario === '1936' ? '1936-1940' : '2026-2030') + '. ' +
-    'Generas un resumen breve (2-3 oraciones, dramatico, en español) de lo que paso en las ultimas 4 semanas en el mundo, basado en el estado actual. ' +
-    'Fecha: ' + fmtDate(getCurrentDate()) + '. ' +
-    'Estado: ' + countriesInfo.slice(0, 12).join('; ') + '. ' +
-    'NO menciones numeros exactos. Foca en eventos politicos, militares, diplomaticos importantes. Tono periodistico.';
+  var actionsText = playerActions.length > 0
+    ? 'Acciones de los jugadores esta semana:\n' + playerActions.map(function(a){
+        return '- ' + a.player + ' (' + a.country + ') ordeno: "' + a.action + '" -> ' + a.result;
+      }).join('\n')
+    : 'Ningun jugador tomo acciones esta semana.';
+
+  var playersText = playerCountries.map(function(p){ return p.name + ' lidera ' + p.displayName; }).join(', ');
+
+  var sysPrompt = 'Sos el narrador del juego de estrategia mundial. Fecha: ' + fmtDate(getCurrentDate()) + '. Escenario: ' + (state.scenario === '1936' ? '1936' : '2026') + '.\n' +
+    'JUGADORES: ' + playersText + '\n\n' +
+    actionsText + '\n\n' +
+    'Generas un resumen narrativo breve (3-4 oraciones, dramatico, en español, tono periodistico-historico) de lo que paso esta semana. ' +
+    'IMPORTANTE: Foca en los paises de los JUGADORES, mencionalos por nombre y país. Narra las consecuencias de sus acciones. ' +
+    'Si no hubo acciones, describe el ambiente politico y lo que hacen los demas paises. ' +
+    'Mantene a los jugadores como protagonistas. NO menciones numeros exactos.';
 
   anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
-    max_tokens: 250,
+    max_tokens: 350,
     system: sysPrompt,
-    messages: [{ role: 'user', content: 'Que paso esta semana en el mundo?' }]
+    messages: [{ role: 'user', content: 'Resumen de la semana del ' + fmtDate(getCurrentDate()) }]
   }).then(function(resp) {
     var text = resp.content[0].text || 'El mundo continua su curso.';
     io.emit('summary', { date: fmtDate(getCurrentDate()), text: text });
     addLog('📜 ' + text);
   }).catch(function(err) {
     console.error('Summary error:', err.message);
+    var fallback = playerActions.length > 0
+      ? playerActions.map(function(a){ return a.result; }).join(' · ')
+      : 'Semana tranquila en el mundo.';
+    io.emit('summary', { date: fmtDate(getCurrentDate()), text: fallback });
   });
 }
 
@@ -453,14 +498,32 @@ function getCountryChat(sid, countryId, userMsg, callback) {
   }
 }
 
-// ── Global AI Command System: player gives free-text orders, AI handles everything ──
-function commandCountry(sid, command, fallbackCountry, callback) {
+// Queue an action - doesn't execute until tick
+function queueAction(sid, command, fallbackCountry, callback) {
   var p = state.players[sid];
-  // Defensive: if player missing, recreate
   if (!p) {
     p = state.players[sid] = { name: 'Lider', color: PLAYER_COLORS[0], country: fallbackCountry || null };
   }
-  // If no country but client passed one, use it
+  if (!p.country && fallbackCountry) {
+    p.country = fallbackCountry;
+    if (state.countries[fallbackCountry] && !state.countries[fallbackCountry].owner) {
+      state.countries[fallbackCountry].owner = sid;
+    }
+  }
+  if (!p.country) return callback({ ok: false, msg: 'Elegi un pais primero' });
+
+  if (!state.queuedActions[sid]) state.queuedActions[sid] = [];
+  state.queuedActions[sid].push({ command: command, country: p.country, name: p.name });
+
+  callback({ ok: true, queued: true, count: state.queuedActions[sid].length });
+}
+
+// Execute a single command via AI (called by tick)
+function commandCountry(sid, command, fallbackCountry, callback) {
+  var p = state.players[sid];
+  if (!p) {
+    p = state.players[sid] = { name: 'Lider', color: PLAYER_COLORS[0], country: fallbackCountry || null };
+  }
   if (!p.country && fallbackCountry) {
     p.country = fallbackCountry;
     if (state.countries[fallbackCountry] && !state.countries[fallbackCountry].owner) {
@@ -763,7 +826,7 @@ io.on('connection', function(socket) {
   socket.on('commandCountry', function(data) {
     var msg = (data.msg || '').substring(0, 300);
     if (!msg) return;
-    commandCountry(socket.id, msg, data.country, function(result) {
+    queueAction(socket.id, msg, data.country, function(result) {
       socket.emit('commandResult', result);
     });
   });
