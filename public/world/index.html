@@ -7,89 +7,92 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Space+Grotesk:wght@600;700;800&display=swap" rel="stylesheet">
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
-    body{background:#0a0e1a;font-family:'Outfit',sans-serif;color:#fff;height:100vh;overflow:hidden;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+    body{background:#f5f5f7;font-family:'Outfit',sans-serif;color:#1a1a1a;height:100vh;overflow:hidden;touch-action:manipulation;-webkit-user-select:none;user-select:none}
 
     /* Lobby */
-    #lobby{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:100;background:radial-gradient(ellipse,rgba(10,14,26,.97),rgba(5,7,13,.99));overflow-y:auto;padding:14px}
+    #lobby{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:100;background:linear-gradient(135deg,#f0f0f5,#e8e8ee);overflow-y:auto;padding:14px}
     #lobby.h{display:none}
-    .lb{text-align:center;padding:20px 24px;border-radius:20px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);max-width:900px;width:100%}
-    .lb h1{font-family:'Space Grotesk',sans-serif;font-size:clamp(22px,5vw,32px);font-weight:800;background:linear-gradient(135deg,#60A5FA,#A78BFA,#F472B6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-    .lb .sub{color:rgba(255,255,255,.2);font-size:9px;letter-spacing:3px;text-transform:uppercase;margin-bottom:18px}
-    #ni{display:block;width:240px;max-width:80vw;margin:0 auto 12px;padding:11px 16px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;border:1.5px solid rgba(255,255,255,.06);border-radius:12px;background:rgba(255,255,255,.03);color:#fff;text-align:center;outline:none}
-    .btn{padding:10px 18px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;border:none;border-radius:10px;cursor:pointer}
-    .btn-pri{background:linear-gradient(135deg,#60A5FA,#A78BFA);color:#0a0e1a}
-    .btn-sec{background:rgba(255,255,255,.05);color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.08)}
+    .lb{text-align:center;padding:24px 28px;border-radius:20px;background:#fff;border:1px solid rgba(0,0,0,.06);max-width:900px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.08)}
+    .lb h1{font-family:'Space Grotesk',sans-serif;font-size:clamp(24px,5vw,34px);font-weight:800;background:linear-gradient(135deg,#1a1a1a,#4a4a4a);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .lb .sub{color:rgba(0,0,0,.4);font-size:9px;letter-spacing:3px;text-transform:uppercase;margin-bottom:18px}
+    #ni{display:block;width:240px;max-width:80vw;margin:0 auto 12px;padding:11px 16px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;border:1.5px solid rgba(0,0,0,.1);border-radius:12px;background:#fff;color:#1a1a1a;text-align:center;outline:none}
+    #ni:focus{border-color:#1a1a1a}
+    .btn{padding:11px 22px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;border:none;border-radius:10px;cursor:pointer}
+    .btn-pri{background:#1a1a1a;color:#fff}
+    .btn-sec{background:#fff;color:#1a1a1a;border:1px solid rgba(0,0,0,.15)}
     .row{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:8px}
-    .opt{padding:7px 12px;border-radius:8px;border:1.5px solid rgba(255,255,255,.06);background:rgba(255,255,255,.02);color:rgba(255,255,255,.5);cursor:pointer;font-size:11px;font-weight:600;-webkit-tap-highlight-color:transparent}
-    .opt.sel{border-color:#A78BFA;color:#A78BFA;background:rgba(167,139,250,.08)}
-    .lbl{font-size:9px;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,.25);margin:12px 0 6px}
+    .opt{padding:8px 14px;border-radius:8px;border:1.5px solid rgba(0,0,0,.1);background:#fff;color:rgba(0,0,0,.6);cursor:pointer;font-size:11px;font-weight:600;-webkit-tap-highlight-color:transparent}
+    .opt.sel{border-color:#1a1a1a;color:#fff;background:#1a1a1a}
+    .lbl{font-size:9px;text-transform:uppercase;letter-spacing:2px;color:rgba(0,0,0,.45);margin:14px 0 6px;font-weight:700}
 
-    #miniMap{display:block;margin:0 auto 6px;border-radius:10px;background:#0a1428;border:1px solid rgba(255,255,255,.06);width:100%;max-width:840px;height:auto;cursor:pointer;aspect-ratio:2/1}
-    #countrySelect{display:block;width:100%;max-width:300px;margin:0 auto 8px;padding:10px 14px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;border:1.5px solid rgba(255,255,255,.08);border-radius:10px;background:rgba(255,255,255,.04);color:#fff;outline:none;cursor:pointer}
-    #countrySelect option{background:#0a0e1a;color:#fff}
-    #selCountry{display:flex;align-items:center;justify-content:center;gap:10px;padding:10px;background:rgba(167,139,250,.06);border:1px solid rgba(167,139,250,.15);border-radius:12px;margin:6px 0;min-height:46px}
+    #miniMap{display:block;margin:0 auto 6px;border-radius:10px;background:#dde6f0;border:1px solid rgba(0,0,0,.08);width:100%;max-width:840px;height:auto;cursor:pointer;aspect-ratio:2/1}
+    #countrySelect{display:block;width:100%;max-width:300px;margin:0 auto 8px;padding:10px 14px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;border:1.5px solid rgba(0,0,0,.12);border-radius:10px;background:#fff;color:#1a1a1a;outline:none;cursor:pointer}
+    #selCountry{display:flex;align-items:center;justify-content:center;gap:10px;padding:10px;background:#1a1a1a;border-radius:12px;margin:6px 0;min-height:46px}
     #selFlag{font-size:32px}
-    #selName{font-weight:700;color:#A78BFA;font-size:14px}
+    #selName{font-weight:700;color:#fff;font-size:14px}
     #lobbyPlayers{display:flex;gap:5px;justify-content:center;margin:8px 0;flex-wrap:wrap}
-    .lpp{padding:4px 10px;border-radius:8px;font-size:11px;font-weight:600;color:#0a0e1a}
+    .lpp{padding:4px 10px;border-radius:8px;font-size:11px;font-weight:600;color:#fff}
 
     /* Game UI */
-    #game{display:none;position:fixed;inset:0;flex-direction:column}
+    #game{display:none;position:fixed;inset:0;flex-direction:column;background:#fff}
     #game.s{display:flex}
-    #topBar{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(0,0,0,.5);border-bottom:1px solid rgba(255,255,255,.04);flex-shrink:0;gap:6px}
-    #turnLabel{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;flex:1;text-align:center}
-    #nextTurnBtn{padding:6px 14px;font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;border:none;border-radius:8px;background:linear-gradient(135deg,#60A5FA,#A78BFA);color:#0a0e1a;cursor:pointer}
-    #backHome{background:none;border:none;color:rgba(255,255,255,.3);font-size:16px;cursor:pointer;padding:4px}
+    #topBar{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#1a1a1a;color:#fff;border-bottom:1px solid rgba(0,0,0,.1);flex-shrink:0;gap:6px}
+    #turnLabel{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;flex:1;text-align:center}
+    #nextTurnBtn{padding:7px 16px;font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;border:none;border-radius:8px;background:#fff;color:#1a1a1a;cursor:pointer;letter-spacing:.5px}
+    #backHome{background:none;border:none;color:rgba(255,255,255,.6);font-size:16px;cursor:pointer;padding:4px}
 
     #mainArea{flex:1;position:relative;overflow:hidden}
-    #mapWrap{position:absolute;inset:0;overflow:hidden}
-    canvas#worldMap{display:block;width:100%;height:100%}
+    #mapWrap{position:absolute;inset:0;overflow:hidden;background:#dde6f0}
+    canvas#worldMap{display:block;width:100%;height:100%;cursor:grab}
+    canvas#worldMap.grabbing{cursor:grabbing}
+
+    /* Zoom controls */
+    #zoomCtrl{position:absolute;top:8px;left:8px;display:flex;flex-direction:column;gap:4px;z-index:11}
+    .zbtn{width:32px;height:32px;background:#fff;border:1px solid rgba(0,0,0,.12);border-radius:8px;color:#1a1a1a;font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.1)}
 
     /* Side panels */
-    #panel{position:absolute;right:8px;top:8px;width:260px;max-height:calc(100% - 16px);background:rgba(10,14,26,.92);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px;backdrop-filter:blur(10px);overflow-y:auto;z-index:10;display:none;flex-direction:column}
+    #panel{position:absolute;right:8px;top:8px;width:280px;max-height:calc(100% - 16px);background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:14px;padding:14px;overflow-y:auto;z-index:10;display:none;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.12)}
     #panel.show{display:flex}
-    #panelHeader{display:flex;align-items:center;gap:10px;margin-bottom:8px}
-    #panelFlag{font-size:32px}
-    #panelName{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:800;flex:1}
-    #panelClose{background:none;border:none;color:rgba(255,255,255,.4);cursor:pointer;font-size:16px;padding:0 4px}
-    .stat{display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.55);padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04)}
-    .stat .v{font-weight:700;color:#fff}
-    .tabs{display:flex;gap:4px;margin:8px 0 4px}
-    .tab{flex:1;padding:6px 8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:8px;cursor:pointer;font-size:10px;font-weight:600;text-align:center;color:rgba(255,255,255,.5)}
-    .tab.act{background:rgba(167,139,250,.15);border-color:#A78BFA;color:#A78BFA}
+    #panelHeader{display:flex;align-items:center;gap:10px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid rgba(0,0,0,.06)}
+    #panelFlag{font-size:34px}
+    #panelName{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:800;flex:1;color:#1a1a1a}
+    #panelClose{background:none;border:none;color:rgba(0,0,0,.4);cursor:pointer;font-size:18px;padding:0 4px}
+    .stat{display:flex;justify-content:space-between;font-size:11px;color:rgba(0,0,0,.55);padding:4px 0;border-bottom:1px solid rgba(0,0,0,.05)}
+    .stat .v{font-weight:700;color:#1a1a1a}
+    .tabs{display:flex;gap:4px;margin:10px 0 6px}
+    .tab{flex:1;padding:7px 8px;background:#f0f0f5;border:1px solid rgba(0,0,0,.06);border-radius:8px;cursor:pointer;font-size:10px;font-weight:700;text-align:center;color:rgba(0,0,0,.5);text-transform:uppercase;letter-spacing:.5px}
+    .tab.act{background:#1a1a1a;border-color:#1a1a1a;color:#fff}
     .tabContent{display:none;flex-direction:column;gap:6px;flex:1;min-height:0}
     .tabContent.act{display:flex}
-    .actbtn{padding:8px 12px;font-size:11px;font-weight:600;border-radius:8px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:rgba(255,255,255,.7);cursor:pointer;text-align:left;font-family:'Outfit',sans-serif}
-    .actbtn:active{background:rgba(167,139,250,.15)}
 
     /* Country chat panel */
-    #countryChat{display:flex;flex-direction:column;flex:1;min-height:140px;max-height:240px}
-    #ccMsgs{flex:1;overflow-y:auto;background:rgba(0,0,0,.3);border-radius:8px;padding:6px;margin-bottom:6px;font-size:11px;line-height:1.4}
-    .ccm{margin:2px 0}
-    .ccm.user{color:#A78BFA;text-align:right}
-    .ccm.ai{color:rgba(255,255,255,.8)}
+    #countryChat{display:flex;flex-direction:column;flex:1;min-height:160px;max-height:280px}
+    #ccMsgs{flex:1;overflow-y:auto;background:#f5f5f7;border:1px solid rgba(0,0,0,.06);border-radius:8px;padding:8px;margin-bottom:6px;font-size:11px;line-height:1.5}
+    .ccm{margin:3px 0}
+    .ccm.user{color:#1a1a1a;text-align:right;background:rgba(0,0,0,.04);padding:4px 8px;border-radius:6px}
+    .ccm.ai{color:rgba(0,0,0,.75);background:#fff;padding:4px 8px;border-radius:6px;border:1px solid rgba(0,0,0,.04)}
     #ccForm{display:flex;gap:4px}
-    #ccInput{flex:1;padding:7px 10px;font-size:11px;border:1px solid rgba(255,255,255,.05);border-radius:7px;background:rgba(255,255,255,.03);color:#fff;outline:none;font-family:'Outfit',sans-serif}
-    #ccSend{padding:7px 12px;font-size:10px;font-weight:700;border:none;border-radius:7px;background:rgba(167,139,250,.2);color:#A78BFA;cursor:pointer;font-family:'Space Grotesk',sans-serif}
+    #ccInput{flex:1;padding:8px 12px;font-size:11px;border:1px solid rgba(0,0,0,.1);border-radius:7px;background:#fff;color:#1a1a1a;outline:none;font-family:'Outfit',sans-serif}
+    #ccSend{padding:8px 14px;font-size:10px;font-weight:700;border:none;border-radius:7px;background:#1a1a1a;color:#fff;cursor:pointer;font-family:'Space Grotesk',sans-serif}
 
     /* Bottom log */
-    #log{position:absolute;left:8px;bottom:8px;width:260px;max-width:calc(100% - 16px);height:100px;background:rgba(10,14,26,.92);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:6px 10px;overflow-y:auto;backdrop-filter:blur(8px);font-size:10px;line-height:1.4;z-index:9}
-    .lmsg{color:rgba(255,255,255,.6);margin:1px 0}
-    .lmsg.sys{color:rgba(167,139,250,.6);font-style:italic}
+    #log{position:absolute;left:8px;bottom:8px;width:280px;max-width:calc(100% - 16px);height:110px;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:12px;padding:8px 12px;overflow-y:auto;font-size:10px;line-height:1.5;z-index:9;box-shadow:0 4px 16px rgba(0,0,0,.08)}
+    .lmsg{color:rgba(0,0,0,.65);margin:2px 0}
+    .lmsg.sys{color:rgba(0,0,0,.4);font-style:italic}
 
     /* Overlay */
-    #overlay{display:none;position:fixed;inset:0;z-index:90;background:rgba(5,7,13,.94);backdrop-filter:blur(8px);align-items:center;justify-content:center;text-align:center;flex-direction:column;padding:20px}
+    #overlay{display:none;position:fixed;inset:0;z-index:90;background:rgba(255,255,255,.94);backdrop-filter:blur(8px);align-items:center;justify-content:center;text-align:center;flex-direction:column;padding:20px}
     #overlay.s{display:flex}
-    #overlay h2{font-family:'Space Grotesk',sans-serif;font-size:clamp(22px,5vw,30px);font-weight:800;margin-bottom:6px}
-    #overlay p{color:rgba(255,255,255,.4);font-size:13px}
+    #overlay h2{font-family:'Space Grotesk',sans-serif;font-size:clamp(22px,5vw,30px);font-weight:800;margin-bottom:6px;color:#1a1a1a}
+    #overlay p{color:rgba(0,0,0,.5);font-size:13px}
 
     @media(max-width:700px){
-      #panel{width:calc(100% - 16px);right:8px;left:8px;top:48px;max-height:50vh}
+      #panel{width:calc(100% - 16px);right:8px;left:8px;top:54px;max-height:50vh}
       #log{width:calc(100% - 16px);left:8px;right:8px;height:80px;bottom:6px}
-      #panelFlag{font-size:26px}
-      #panelName{font-size:12px}
+      #panelFlag{font-size:28px}
+      #panelName{font-size:13px}
       .stat{font-size:10px}
-      #countryChat{max-height:150px}
+      #countryChat{max-height:160px}
     }
   </style>
 </head>
@@ -141,6 +144,11 @@
   </div>
   <div id="mainArea">
     <div id="mapWrap"><canvas id="worldMap"></canvas></div>
+    <div id="zoomCtrl">
+      <button class="zbtn" id="zoomIn">+</button>
+      <button class="zbtn" id="zoomOut">−</button>
+      <button class="zbtn" id="zoomReset" style="font-size:14px">⊙</button>
+    </div>
     <div id="panel">
       <div id="panelHeader">
         <div id="panelFlag">🌍</div>
@@ -200,8 +208,33 @@ var WORLD_GEO = null;
 var WORLD_LOADED = false;
 var COUNTRY_CENTROIDS = {};
 
+// Country palette - unique color per country (deterministic from ID)
+var COLOR_PALETTE = [
+  '#FFB3BA','#FFDFBA','#FFFFBA','#BAFFC9','#BAE1FF',
+  '#D7BAFF','#FFBAE1','#BAFFE1','#FFE4BA','#C9BAFF',
+  '#FFCCBC','#F8BBD0','#E1BEE7','#C5CAE9','#BBDEFB',
+  '#B2EBF2','#B2DFDB','#C8E6C9','#DCEDC8','#FFF9C4',
+  '#FFECB3','#FFE0B2','#D7CCC8','#CFD8DC','#FFCDD2',
+  '#F0F4C3','#FFAB91','#FFCC80','#FFE082','#A5D6A7'
+];
+function colorForCountry(iso) {
+  if (!iso) return '#e0e0e0';
+  var hash = 0;
+  for (var i = 0; i < iso.length; i++) hash = (hash * 31 + iso.charCodeAt(i)) | 0;
+  return COLOR_PALETTE[Math.abs(hash) % COLOR_PALETTE.length];
+}
+
 function project(lon, lat) {
   return [(lon + 180) / 360 * 1000, (90 - lat) / 180 * 500];
+}
+
+// Polygon area for centroid calc
+function polygonArea(ring) {
+  var area = 0;
+  for (var i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    area += (ring[j][0] + ring[i][0]) * (ring[j][1] - ring[i][1]);
+  }
+  return Math.abs(area / 2);
 }
 
 function loadWorldGeo() {
@@ -223,9 +256,12 @@ function loadWorldGeo() {
           });
         }
         WORLD_GEO[iso] = polys;
-        // Compute centroid using largest polygon (mainland)
-        var biggest = polys[0];
-        polys.forEach(function(p){ if (p.length > biggest.length) biggest = p; });
+        // Use the polygon with largest AREA (true mainland, not most points)
+        var biggest = polys[0], biggestArea = polygonArea(polys[0]);
+        polys.forEach(function(p){
+          var a = polygonArea(p);
+          if (a > biggestArea) { biggest = p; biggestArea = a; }
+        });
         if (biggest && biggest.length) {
           var sx = 0, sy = 0;
           biggest.forEach(function(p){ sx += p[0]; sy += p[1]; });
@@ -248,27 +284,27 @@ loadWorldGeo();
 var miniCvs = document.getElementById('miniMap');
 var mctx = miniCvs.getContext('2d');
 
-function drawMap(ctx, w, h, ownedColors) {
-  ctx.fillStyle = '#0a1428';
+function drawMap(ctx, w, h, ownedColors, transform) {
+  ctx.fillStyle = '#dde6f0'; // ocean
   ctx.fillRect(0,0,w,h);
   if (!WORLD_LOADED) {
-    ctx.fillStyle = 'rgba(255,255,255,.3)';
+    ctx.fillStyle = 'rgba(0,0,0,.3)';
     ctx.font = '12px Outfit';
     ctx.textAlign = 'center';
     ctx.fillText('Cargando mapa...', w/2, h/2);
     return;
   }
-  ctx.lineWidth = 0.6;
+  ctx.save();
+  if (transform) {
+    ctx.translate(transform.x, transform.y);
+    ctx.scale(transform.scale, transform.scale);
+  }
+  ctx.lineWidth = 0.5;
+  ctx.strokeStyle = 'rgba(0,0,0,.3)';
   for (var iso in WORLD_GEO) {
     var polys = WORLD_GEO[iso];
-    var fill = '#1e2d4a';
-    var stroke = 'rgba(120,180,255,.3)';
-    if (ownedColors && ownedColors[iso]) {
-      fill = ownedColors[iso];
-      stroke = 'rgba(255,255,255,.4)';
-    }
+    var fill = (ownedColors && ownedColors[iso]) ? ownedColors[iso] : colorForCountry(iso);
     ctx.fillStyle = fill;
-    ctx.strokeStyle = stroke;
     polys.forEach(function(ring) {
       ctx.beginPath();
       ring.forEach(function(pt, i) {
@@ -281,6 +317,7 @@ function drawMap(ctx, w, h, ownedColors) {
       ctx.stroke();
     });
   }
+  ctx.restore();
 }
 
 function drawMiniMap() {
@@ -305,9 +342,10 @@ function drawMiniMap() {
   }
 }
 
-// Find country at canvas pos using point-in-polygon
+// Find country at canvas pos using point-in-polygon, with centroid fallback
 function findCountryAt(cx, cy, w, h) {
   if (!WORLD_LOADED) return null;
+  // First pass: exact polygon hit
   for (var iso in WORLD_GEO) {
     var polys = WORLD_GEO[iso];
     for (var i = 0; i < polys.length; i++) {
@@ -321,6 +359,19 @@ function findCountryAt(cx, cy, w, h) {
       if (inside) return iso;
     }
   }
+  // Second pass: nearest centroid (fallback for islands like Japan)
+  var best = null, bestD = Infinity;
+  for (var iso2 in COUNTRY_CENTROIDS) {
+    if (!COUNTRIES.find(function(c){return c.id===iso2;})) continue;
+    var ctr = COUNTRY_CENTROIDS[iso2];
+    var x = (ctr[0]/1000)*w;
+    var y = (ctr[1]/500)*h;
+    var dx = x - cx, dy = y - cy;
+    var d = dx*dx + dy*dy;
+    if (d < bestD) { bestD = d; best = iso2; }
+  }
+  // Only return if reasonably close (within 30px)
+  if (bestD < 900) return best;
   return null;
 }
 
@@ -515,6 +566,7 @@ document.getElementById('nextTurnBtn').onclick = function() {
 var wmCvs = document.getElementById('worldMap');
 var wmCtx = wmCvs.getContext('2d');
 var dpr = window.devicePixelRatio || 1;
+var mapTransform = { x: 0, y: 0, scale: 1 };
 
 function resizeMap() {
   var wrap = document.getElementById('mapWrap');
@@ -522,6 +574,7 @@ function resizeMap() {
   wmCvs.height = wrap.clientHeight * dpr;
   wmCvs.style.width = wrap.clientWidth + 'px';
   wmCvs.style.height = wrap.clientHeight + 'px';
+  drawWorldMap();
 }
 window.addEventListener('resize', resizeMap);
 
@@ -530,57 +583,179 @@ function drawWorldMap() {
   var w = wmCvs.width / dpr, h = wmCvs.height / dpr;
   wmCtx.setTransform(dpr,0,0,dpr,0,0);
 
-  // Build owned colors
   var ownedColors = {};
   for (var cid in gameState.countries) {
     var data = gameState.countries[cid];
     if (data.owner && gameState.players[data.owner]) {
-      ownedColors[cid] = gameState.players[data.owner].color + 'cc';
+      ownedColors[cid] = gameState.players[data.owner].color;
     } else if (data.controlledBy) {
-      // Colonial control - tinted blue
-      ownedColors[cid] = '#3b5a8a99';
+      ownedColors[cid] = '#7a8aa8';
     }
   }
-  // Highlight selected
-  if (inspectCountry) ownedColors[inspectCountry] = '#A78BFAcc';
+  if (inspectCountry) ownedColors[inspectCountry] = '#1a1a1a';
 
-  drawMap(wmCtx, w, h, ownedColors);
+  drawMap(wmCtx, w, h, ownedColors, mapTransform);
 
-  // Draw small army indicators (small numbers near each country)
+  // Country labels with army count (transformed)
   if (WORLD_LOADED) {
+    wmCtx.save();
+    wmCtx.translate(mapTransform.x, mapTransform.y);
+    wmCtx.scale(mapTransform.scale, mapTransform.scale);
     COUNTRIES.forEach(function(c) {
       var data = gameState.countries[c.id];
-      if (!data || !data.army) return;
+      if (!data) return;
       var ctr = COUNTRY_CENTROIDS[c.id];
       if (!ctr) return;
       var x = (ctr[0]/1000)*w;
       var y = (ctr[1]/500)*h;
-      // Only show if army > 100 or selected
+      var label = c.id;
       if (data.army > 100 || c.id === inspectCountry) {
-        wmCtx.font = '700 9px Outfit';
+        wmCtx.font = '700 ' + (10/mapTransform.scale) + 'px Outfit';
         wmCtx.textAlign = 'center';
-        wmCtx.fillStyle = 'rgba(255,255,255,.85)';
-        wmCtx.strokeStyle = 'rgba(0,0,0,.6)';
-        wmCtx.lineWidth = 3;
-        wmCtx.strokeText(data.army, x, y);
-        wmCtx.fillText(data.army, x, y);
+        wmCtx.lineWidth = 3/mapTransform.scale;
+        wmCtx.strokeStyle = 'rgba(255,255,255,.9)';
+        wmCtx.fillStyle = 'rgba(0,0,0,.85)';
+        wmCtx.strokeText(label, x, y);
+        wmCtx.fillText(label, x, y);
       }
     });
+    wmCtx.restore();
   }
 }
 
-wmCvs.addEventListener('click', function(e) {
+// ── Zoom and Pan ──
+function getCanvasCoords(e) {
+  var r = wmCvs.getBoundingClientRect();
+  var px = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
+  var py = (e.touches ? e.touches[0].clientY : e.clientY) - r.top;
+  return [px, py];
+}
+
+function zoomAt(cx, cy, factor) {
+  var newScale = mapTransform.scale * factor;
+  newScale = Math.max(1, Math.min(8, newScale));
+  if (newScale === mapTransform.scale) return;
+  // Adjust translation so cx,cy stays in place
+  mapTransform.x = cx - (cx - mapTransform.x) * (newScale / mapTransform.scale);
+  mapTransform.y = cy - (cy - mapTransform.y) * (newScale / mapTransform.scale);
+  mapTransform.scale = newScale;
+  clampPan();
+  drawWorldMap();
+}
+
+function clampPan() {
+  var w = wmCvs.width / dpr, h = wmCvs.height / dpr;
+  var maxX = 0, maxY = 0;
+  var minX = w - w * mapTransform.scale;
+  var minY = h - h * mapTransform.scale;
+  if (mapTransform.x > maxX) mapTransform.x = maxX;
+  if (mapTransform.x < minX) mapTransform.x = minX;
+  if (mapTransform.y > maxY) mapTransform.y = maxY;
+  if (mapTransform.y < minY) mapTransform.y = minY;
+}
+
+document.getElementById('zoomIn').onclick = function(){
+  var w = wmCvs.width/dpr, h = wmCvs.height/dpr;
+  zoomAt(w/2, h/2, 1.4);
+};
+document.getElementById('zoomOut').onclick = function(){
+  var w = wmCvs.width/dpr, h = wmCvs.height/dpr;
+  zoomAt(w/2, h/2, 0.7);
+};
+document.getElementById('zoomReset').onclick = function(){
+  mapTransform = { x:0, y:0, scale:1 };
+  drawWorldMap();
+};
+
+wmCvs.addEventListener('wheel', function(e){
+  e.preventDefault();
+  var c = getCanvasCoords(e);
+  zoomAt(c[0], c[1], e.deltaY < 0 ? 1.15 : 0.87);
+}, {passive:false});
+
+// Drag to pan
+var dragging = false, dragStart = null, dragMoved = false;
+wmCvs.addEventListener('mousedown', function(e){
+  dragging = true; dragStart = [e.clientX, e.clientY, mapTransform.x, mapTransform.y];
+  dragMoved = false;
+  wmCvs.classList.add('grabbing');
+});
+wmCvs.addEventListener('mousemove', function(e){
+  if (!dragging) return;
+  var dx = e.clientX - dragStart[0], dy = e.clientY - dragStart[1];
+  if (Math.abs(dx) > 3 || Math.abs(dy) > 3) dragMoved = true;
+  mapTransform.x = dragStart[2] + dx;
+  mapTransform.y = dragStart[3] + dy;
+  clampPan();
+  drawWorldMap();
+});
+window.addEventListener('mouseup', function(){
+  dragging = false;
+  wmCvs.classList.remove('grabbing');
+});
+
+// Touch pan + pinch
+var touchState = null;
+wmCvs.addEventListener('touchstart', function(e){
+  if (e.touches.length === 1) {
+    touchState = { mode:'pan', x:e.touches[0].clientX, y:e.touches[0].clientY, tx:mapTransform.x, ty:mapTransform.y, moved:false };
+  } else if (e.touches.length === 2) {
+    var dx = e.touches[0].clientX - e.touches[1].clientX;
+    var dy = e.touches[0].clientY - e.touches[1].clientY;
+    touchState = { mode:'pinch', dist:Math.sqrt(dx*dx+dy*dy), scale:mapTransform.scale };
+  }
+}, {passive:false});
+wmCvs.addEventListener('touchmove', function(e){
+  e.preventDefault();
+  if (!touchState) return;
+  if (touchState.mode === 'pan' && e.touches.length === 1) {
+    var dx = e.touches[0].clientX - touchState.x;
+    var dy = e.touches[0].clientY - touchState.y;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) touchState.moved = true;
+    mapTransform.x = touchState.tx + dx;
+    mapTransform.y = touchState.ty + dy;
+    clampPan();
+    drawWorldMap();
+  } else if (touchState.mode === 'pinch' && e.touches.length === 2) {
+    var dx2 = e.touches[0].clientX - e.touches[1].clientX;
+    var dy2 = e.touches[0].clientY - e.touches[1].clientY;
+    var d = Math.sqrt(dx2*dx2+dy2*dy2);
+    var factor = d / touchState.dist;
+    var w = wmCvs.width/dpr, h = wmCvs.height/dpr;
+    var ns = Math.max(1, Math.min(8, touchState.scale * factor));
+    mapTransform.scale = ns;
+    clampPan();
+    drawWorldMap();
+  }
+}, {passive:false});
+wmCvs.addEventListener('touchend', function(e){
+  if (touchState && touchState.mode === 'pan' && !touchState.moved) {
+    // Treat as click
+    handleMapClick(touchState.x, touchState.y);
+  }
+  touchState = null;
+});
+
+function handleMapClick(clientX, clientY) {
   if (!gameState || !WORLD_LOADED) return;
   var r = wmCvs.getBoundingClientRect();
-  var cx = (e.clientX - r.left);
-  var cy = (e.clientY - r.top);
-  var iso = findCountryAt(cx, cy, r.width, r.height);
+  var cx = clientX - r.left;
+  var cy = clientY - r.top;
+  // Inverse transform: convert screen coords to map coords
+  var mx = (cx - mapTransform.x) / mapTransform.scale;
+  var my = (cy - mapTransform.y) / mapTransform.scale;
+  var iso = findCountryAt(mx, my, r.width, r.height);
   if (iso && gameState.countries[iso]) {
     inspectCountry = iso;
     document.getElementById('panel').classList.add('show');
     updatePanel(iso);
     drawWorldMap();
   }
+}
+
+wmCvs.addEventListener('click', function(e) {
+  if (dragMoved) return; // ignore click after drag
+  handleMapClick(e.clientX, e.clientY);
 });
 
 window.closePanel = function() {
