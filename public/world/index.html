@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
   <title>Imperio de Romano</title>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Space+Grotesk:wght@600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Space+Grotesk:wght@600;700;800&family=Cinzel:wght@400;600;700;900&family=IM+Fell+English+SC&display=swap" rel="stylesheet">
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     body{background:#f5f5f7;font-family:'Outfit',sans-serif;color:#1a1a1a;height:100vh;overflow:hidden;touch-action:manipulation;-webkit-user-select:none;user-select:none}
@@ -57,7 +57,7 @@
     #backHome{background:none;border:none;color:rgba(255,255,255,.6);font-size:16px;cursor:pointer;padding:4px}
 
     #mainArea{flex:1;position:relative;overflow:hidden}
-    #mapWrap{position:absolute;inset:0;overflow:hidden;background:linear-gradient(180deg,#a8c5db,#a3c0d6)}
+    #mapWrap{position:absolute;inset:0;overflow:hidden;background:#0e2238}
     canvas#worldMap{display:block;width:100%;height:100%;cursor:grab}
     canvas#worldMap.grabbing{cursor:grabbing}
 
@@ -321,17 +321,19 @@ var WORLD_GEO = null;
 var WORLD_LOADED = false;
 var COUNTRY_CENTROIDS = {};
 
-// Premium country palette - rich, distinct colors with great contrast
+// EU4-style saturated palette - rich historical map colors
 var COLOR_PALETTE = [
-  '#E8B4B8','#E7C3A6','#D9C589','#A8C49C','#88B5C9',
-  '#A89BC4','#C9A0C2','#9FBFA9','#D4B080','#B5A8D2',
-  '#D49595','#C8A3B8','#B091B5','#9BA8C4','#8FB4D4',
-  '#94B8B8','#9DB8A3','#A8C99A','#C5C89A','#DBCB8E',
-  '#DBC080','#D4A878','#B8A89A','#A8AEB5','#D49595',
-  '#C5C58A','#D4A088','#D4AC80','#D4BB85','#9DC4A0'
+  '#c44545','#d97a2c','#d4a017','#85a83d','#3e8c4e',
+  '#2d8a8a','#3e7ab5','#5d4ba8','#8a3d8a','#b54177',
+  '#a83d3d','#c46d2c','#b8941c','#6d9c2c','#2c9c5d',
+  '#1c8a9c','#2c5d9c','#6d3d9c','#9c2c8a','#9c2c5d',
+  '#8a2c2c','#9c5d2c','#9c7a1c','#5d8a1c','#1c8a3d',
+  '#1c7a8a','#1c4d8a','#5d2c8a','#8a1c7a','#8a1c4d',
+  '#bd5e5e','#cf8a4d','#cfae3d','#9cba5d','#5dba7a',
+  '#5dabba','#5d80ba','#7a5dba','#ba5dab','#ba5d80'
 ];
 function colorForCountry(iso) {
-  if (!iso) return '#d8d8da';
+  if (!iso) return '#5a6878';
   var hash = 0;
   for (var i = 0; i < iso.length; i++) hash = (hash * 31 + iso.charCodeAt(i)) | 0;
   return COLOR_PALETTE[Math.abs(hash) % COLOR_PALETTE.length];
@@ -769,21 +771,23 @@ function drawWorldMap() {
   var w = wmCvs.width / dpr, h = wmCvs.height / dpr;
   wmCtx.setTransform(dpr,0,0,dpr,0,0);
 
-  // Premium ocean gradient
-  var oceanGrad = wmCtx.createLinearGradient(0, 0, 0, h);
-  oceanGrad.addColorStop(0, '#a8c5db');
-  oceanGrad.addColorStop(0.5, '#b9d2e3');
-  oceanGrad.addColorStop(1, '#a3c0d6');
+  // Deep navy ocean (EU4 style)
+  var oceanGrad = wmCtx.createRadialGradient(w/2, h/2, h*0.2, w/2, h/2, h*0.9);
+  oceanGrad.addColorStop(0, '#2a4868');
+  oceanGrad.addColorStop(0.6, '#1e3550');
+  oceanGrad.addColorStop(1, '#0e2238');
   wmCtx.fillStyle = oceanGrad;
   wmCtx.fillRect(0, 0, w, h);
 
-  // Subtle ocean texture (lat lines)
-  wmCtx.strokeStyle = 'rgba(255,255,255,.05)';
+  // Ocean wave texture
+  wmCtx.strokeStyle = 'rgba(120,170,210,.08)';
   wmCtx.lineWidth = 1;
-  for (var lat = 0; lat < h; lat += 30) {
+  for (var lat = 0; lat < h; lat += 24) {
     wmCtx.beginPath();
-    wmCtx.moveTo(0, lat);
-    wmCtx.lineTo(w, lat);
+    for (var lx = 0; lx <= w; lx += 8) {
+      var ly = lat + Math.sin(lx*0.02 + lat*0.03)*2;
+      if (lx === 0) wmCtx.moveTo(lx, ly); else wmCtx.lineTo(lx, ly);
+    }
     wmCtx.stroke();
   }
 
@@ -793,25 +797,25 @@ function drawWorldMap() {
     if (data.owner && gameState.players[data.owner]) {
       ownedColors[cid] = gameState.players[data.owner].color;
     } else if (data.controlledBy) {
-      ownedColors[cid] = '#8a9ab8';
+      ownedColors[cid] = '#5a6a85';
     }
   }
-  if (inspectCountry) ownedColors[inspectCountry] = '#2a2a3a';
+  if (inspectCountry) ownedColors[inspectCountry] = '#1a1a2a';
 
   wmCtx.save();
   wmCtx.translate(mapTransform.x + mapOffX, mapTransform.y + mapOffY);
   wmCtx.scale(mapTransform.scale, mapTransform.scale);
 
   if (WORLD_LOADED) {
-    // Country shadows (subtle drop shadow effect)
-    wmCtx.fillStyle = 'rgba(40,55,75,.18)';
+    // Country shadows
+    wmCtx.fillStyle = 'rgba(0,10,20,.4)';
     for (var iso0 in WORLD_GEO) {
       var polys0 = WORLD_GEO[iso0];
       polys0.forEach(function(ring) {
         wmCtx.beginPath();
         ring.forEach(function(pt, i) {
-          var x = (pt[0]/1000)*mapDrawW + 1.5/mapTransform.scale;
-          var y = (pt[1]/500)*mapDrawH + 1.5/mapTransform.scale;
+          var x = (pt[0]/1000)*mapDrawW + 2.5/mapTransform.scale;
+          var y = (pt[1]/500)*mapDrawH + 2.5/mapTransform.scale;
           if (i===0) wmCtx.moveTo(x,y); else wmCtx.lineTo(x,y);
         });
         wmCtx.closePath();
@@ -820,8 +824,8 @@ function drawWorldMap() {
     }
 
     // Country fills
-    wmCtx.lineWidth = 0.6 / mapTransform.scale;
-    wmCtx.strokeStyle = 'rgba(60,75,95,.55)';
+    wmCtx.lineWidth = 0.7 / mapTransform.scale;
+    wmCtx.strokeStyle = 'rgba(0,8,18,.7)';
     for (var iso in WORLD_GEO) {
       var polys = WORLD_GEO[iso];
       var fill = ownedColors[iso] || colorForCountry(iso);
@@ -839,7 +843,23 @@ function drawWorldMap() {
       });
     }
 
-    // Country names (always visible, premium label style)
+    // Subtle land texture overlay
+    wmCtx.fillStyle = 'rgba(255,250,230,.04)';
+    for (var iso2 in WORLD_GEO) {
+      var polys2 = WORLD_GEO[iso2];
+      polys2.forEach(function(ring) {
+        wmCtx.beginPath();
+        ring.forEach(function(pt, i) {
+          var x = (pt[0]/1000)*mapDrawW;
+          var y = (pt[1]/500)*mapDrawH;
+          if (i===0) wmCtx.moveTo(x,y); else wmCtx.lineTo(x,y);
+        });
+        wmCtx.closePath();
+        wmCtx.fill();
+      });
+    }
+
+    // Country names - Cinzel serif, capitalized, with shadow (EU4 style)
     COUNTRIES.forEach(function(c) {
       var data = gameState.countries[c.id];
       if (!data) return;
@@ -848,21 +868,23 @@ function drawWorldMap() {
       var x = (ctr[0]/1000)*mapDrawW;
       var y = (ctr[1]/500)*mapDrawH;
       var alias = (gameState.aliases || {})[c.id];
-      var label = (alias && alias.name) || c.name;
-      var fontSize = Math.max(7, 11/mapTransform.scale);
-      // Only show label if zoomed in enough OR major country OR selected
-      var minScale = label.length > 10 ? 1.5 : (label.length > 6 ? 1.0 : 0.8);
+      var label = ((alias && alias.name) || c.name).toUpperCase();
+      var fontSize = Math.max(8, 13/mapTransform.scale);
+      var minScale = label.length > 10 ? 1.4 : (label.length > 6 ? 0.9 : 0.7);
       if (mapTransform.scale >= minScale || c.id === inspectCountry || c.id === myCountry) {
-        wmCtx.font = '700 ' + fontSize + 'px Outfit';
+        wmCtx.font = '700 ' + fontSize + 'px "Cinzel", serif';
         wmCtx.textAlign = 'center';
         wmCtx.textBaseline = 'middle';
-        // Text outline (white)
-        wmCtx.lineWidth = 4/mapTransform.scale;
-        wmCtx.strokeStyle = 'rgba(255,255,255,.85)';
         wmCtx.lineJoin = 'round';
+        // Dark shadow
+        wmCtx.fillStyle = 'rgba(0,0,0,.7)';
+        wmCtx.fillText(label, x + 1.2/mapTransform.scale, y + 1.2/mapTransform.scale);
+        // Outline
+        wmCtx.lineWidth = 3/mapTransform.scale;
+        wmCtx.strokeStyle = 'rgba(0,0,0,.85)';
         wmCtx.strokeText(label, x, y);
-        // Text fill (dark)
-        wmCtx.fillStyle = 'rgba(20,30,45,.95)';
+        // Light fill
+        wmCtx.fillStyle = '#f5ead4';
         wmCtx.fillText(label, x, y);
       }
     });
