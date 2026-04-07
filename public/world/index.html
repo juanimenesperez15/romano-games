@@ -51,8 +51,8 @@
     #myCountryHeader{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.1);padding:5px 12px;border-radius:10px}
     #myFlag{font-size:22px;line-height:1}
     #myName{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#fff;white-space:nowrap}
-    #turnLabel{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;flex:1;text-align:center}
-    #nextTurnBtn{padding:7px 16px;font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;border:none;border-radius:8px;background:#fff;color:#1a1a1a;cursor:pointer;letter-spacing:.5px}
+    #dateLabel{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;flex:1;text-align:center}
+    #timelineBtn{padding:7px 14px;font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;border:none;border-radius:8px;background:#fff;color:#1a1a1a;cursor:pointer;letter-spacing:.3px}
     #backHome{background:none;border:none;color:rgba(255,255,255,.6);font-size:16px;cursor:pointer;padding:4px}
 
     #mainArea{flex:1;position:relative;overflow:hidden}
@@ -99,6 +99,18 @@
     #overlay.s{display:flex}
     #overlay h2{font-family:'Space Grotesk',sans-serif;font-size:clamp(22px,5vw,30px);font-weight:800;margin-bottom:6px;color:#1a1a1a}
     #overlay p{color:rgba(0,0,0,.5);font-size:13px}
+
+    /* Timeline modal */
+    #timelineModal{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:14px}
+    #timelineModal.show{display:flex}
+    #tlBox{background:#fff;border-radius:18px;padding:20px 22px;max-width:340px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,.3)}
+    #tlHeader{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}
+    .tlOpts{display:flex;flex-direction:column;gap:8px}
+    .tlbtn{padding:14px;border:1.5px solid rgba(0,0,0,.1);background:#fff;color:#1a1a1a;border-radius:12px;cursor:pointer;font-family:'Outfit',sans-serif;text-align:center;-webkit-tap-highlight-color:transparent;transition:all .15s}
+    .tlbtn:hover{border-color:#1a1a1a;background:#f5f5f7}
+    .tlbtn.tlhighlight{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+    .tlbtn.tlhighlight:hover{background:#000}
+    .tld{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700}
 
     /* Compact popup for other countries */
     #compactPopup{display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:20;background:#fff;border:1px solid rgba(0,0,0,.1);border-radius:14px;padding:16px 20px;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.2);min-width:200px;max-width:240px}
@@ -188,8 +200,8 @@
       <span id="myFlag">🌍</span>
       <span id="myName">-</span>
     </div>
-    <div id="turnLabel">Año 1/15</div>
-    <button id="nextTurnBtn">SIGUIENTE AÑO ►</button>
+    <div id="dateLabel">1/1/1936</div>
+    <button id="timelineBtn" onclick="openTimeline()">⏱ AVANZAR</button>
   </div>
   <div id="mainArea">
     <div id="mapWrap"><canvas id="worldMap"></canvas></div>
@@ -251,6 +263,39 @@
 </div>
 
 <div id="overlay"><h2 id="olT"></h2><p id="olM"></p></div>
+
+<!-- Timeline modal -->
+<div id="timelineModal">
+  <div id="tlBox">
+    <div id="tlHeader">
+      <div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:800">Línea temporal</div>
+        <div id="tlCurrent" style="font-size:11px;color:rgba(0,0,0,.4);margin-top:2px">-</div>
+      </div>
+      <button onclick="closeTimeline()" style="background:none;border:none;font-size:20px;color:rgba(0,0,0,.4);cursor:pointer">✕</button>
+    </div>
+    <div class="tlOpts">
+      <button class="tlbtn" onclick="advance(7)">
+        <div class="tld">+1 semana</div>
+      </button>
+      <button class="tlbtn" onclick="advance(30)">
+        <div class="tld">+1 mes</div>
+      </button>
+      <button class="tlbtn" onclick="advance(90)">
+        <div class="tld">+3 meses</div>
+      </button>
+      <button class="tlbtn" onclick="advance(180)">
+        <div class="tld">+6 meses</div>
+      </button>
+      <button class="tlbtn tlhighlight" onclick="advance(365)">
+        <div class="tld">+1 año</div>
+      </button>
+      <button class="tlbtn" onclick="advance(730)">
+        <div class="tld">+2 años</div>
+      </button>
+    </div>
+  </div>
+</div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
@@ -578,7 +623,7 @@ socket.on('gameStart', function() {
 socket.on('state', function(s) {
   gameState = s;
   ALIASES = s.aliases || {};
-  document.getElementById('turnLabel').textContent = 'Año ' + s.turn + '/' + s.maxTurns;
+  document.getElementById('dateLabel').textContent = s.currentDate || '-';
   // Server now sends myCountry directly
   myCountry = s.myCountry || null;
   if (!myCountry) {
@@ -648,8 +693,17 @@ socket.on('gameEnd', function(d) {
   document.getElementById('olM').innerHTML = 'Top 5:<br>' + d.scores.slice(0,5).map(function(s,i){return (i+1)+'. '+s.displayName+' ('+s.score+' pts)';}).join('<br>');
 });
 
-document.getElementById('nextTurnBtn').onclick = function() {
-  socket.emit('nextTurn');
+// Timeline modal
+window.openTimeline = function() {
+  document.getElementById('timelineModal').classList.add('show');
+  if (gameState) document.getElementById('tlCurrent').textContent = 'desde ' + (gameState.currentDate || '-');
+};
+window.closeTimeline = function() {
+  document.getElementById('timelineModal').classList.remove('show');
+};
+window.advance = function(days) {
+  socket.emit('advanceTime', { days: days });
+  closeTimeline();
 };
 
 // ── World Map (game) ──

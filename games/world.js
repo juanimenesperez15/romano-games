@@ -18,8 +18,8 @@ try {
 
 module.exports = function(io) {
 
-var MAX_TURNS = 15;
 var MAX_PLAYERS = 4;
+var GAME_DURATION_DAYS = 365 * 5; // Total game duration: 5 years
 
 var state = resetState();
 
@@ -30,12 +30,24 @@ function resetState() {
     difficulty: 'normal',
     players: {},
     countries: {},
-    turn: 0,
+    daysElapsed: 0,
     chat: [],
     log: [],
     winner: null,
-    countryChats: {}, // { countryId: [{role, text}] }
+    countryChats: {},
   };
+}
+
+function getStartDate(scenario) {
+  return scenario === '1936' ? new Date(1936, 0, 1) : new Date(2026, 0, 1);
+}
+function getCurrentDate() {
+  var d = getStartDate(state.scenario);
+  d.setDate(d.getDate() + state.daysElapsed);
+  return d;
+}
+function fmtDate(d) {
+  return d.getDate() + '/' + (d.getMonth()+1) + '/' + d.getFullYear();
 }
 
 var PLAYER_COLORS = ['#EF4444', '#3B82F6', '#22C55E', '#F59E0B'];
@@ -107,11 +119,13 @@ function broadcastGameState() {
   }
 
   // Send personalized state per player (own stats full, others hidden)
+  var dateStr = fmtDate(getCurrentDate());
   for (var psid in state.players) {
     var myPlayer = state.players[psid];
     var snap = {
-      turn: state.turn,
-      maxTurns: MAX_TURNS,
+      daysElapsed: state.daysElapsed,
+      maxDays: GAME_DURATION_DAYS,
+      currentDate: dateStr,
       scenario: state.scenario,
       countries: {},
       players: basePlayers,
@@ -162,7 +176,7 @@ function startGame() {
   if (state.phase !== 'lobby') return;
   state.phase = 'playing';
   state.countries = initCountries(state.scenario);
-  state.turn = 1;
+  state.daysElapsed = 0;
   state.log = [];
   state.countryChats = {};
   for (var sid in state.players) {
@@ -176,32 +190,34 @@ function startGame() {
   broadcastGameState();
 }
 
-function nextTurn() {
-  if (state.phase !== 'playing') return;
+function advanceTime(days) {
+  if (state.phase !== 'playing' || days <= 0) return;
+  days = Math.min(days, 730); // cap at 2 years per advance
 
-  // Run bots
-  runBotsTurn();
+  var fraction = days / 365; // fraction of a year
+
+  // Run bots proportional to time (more often for longer advances)
+  var botRuns = Math.max(1, Math.floor(days / 30));
+  for (var b = 0; b < botRuns; b++) runBotsTurn();
 
   // Resolve combats
   resolveCombats();
 
-  // Economy income (each turn = 1 year)
+  // Economy income proportional
   for (var cid in state.countries) {
     var c = state.countries[cid];
-    c.eco += c.ecoIncome;
-    // Industry boosts income over time
+    c.eco += Math.floor(c.ecoIncome * fraction);
     c.ecoIncome = Math.floor(c.eco * 0.05) + (c.industry * 5) + 10;
-    // Morale recovers slowly
-    if (c.morale < 100) c.morale = Math.min(100, c.morale + 2);
+    if (c.morale < 100) c.morale = Math.min(100, c.morale + Math.floor(2 * fraction));
   }
 
-  state.turn++;
-  if (state.turn > MAX_TURNS) {
+  state.daysElapsed += days;
+  if (state.daysElapsed >= GAME_DURATION_DAYS) {
     endGame();
     return;
   }
   broadcastGameState();
-  io.emit('turnEnd', { turn: state.turn - 1 });
+  io.emit('turnEnd', { date: fmtDate(getCurrentDate()) });
 }
 
 function applyAction(sid, action) {
@@ -260,7 +276,7 @@ function resolveCombats() {
       if (neighbors.indexOf(targetId) === -1) return;
       if (attacker.war.indexOf(targetId) === -1) return;
       var aPower = attacker.army + attacker.tech * 10;
-      var dPower = defender.army + defender.tech * 15;
+      var dPower = defender.army + defender.tech * 15 + (defender.defense || 0);
       defender.allies.forEach(function(ally) {
         var a = state.countries[ally];
         if (a) dPower += Math.floor(a.army * 0.1);
@@ -268,18 +284,33 @@ function resolveCombats() {
       var roll = Math.random() * 0.4 + 0.8;
       aPower *= roll;
       if (aPower > dPower) {
-        var lost = Math.floor(attacker.army * 0.2);
+        var lost = Math.floor(attacker.army * 0.15);
         attacker.army -= lost;
-        defender.army = Math.floor(defender.army * 0.5);
-        if (defender.territories.length > 1) {
-          var taken = defender.territories.pop();
-          attacker.territories.push(taken);
+        defender.army = Math.floor(defender.army * 0.4);
+        defender.morale = Math.max(0, defender.morale - 30);
+        // CONQUEST: if defender army is broken, attacker conquers the country
+        if (defender.army < 30) {
+          defender.owner = attacker.owner; // ownership transfers (visible on map!)
+          defender.army = Math.floor(attacker.army * 0.1); // garrison
+          attacker.army = Math.floor(attacker.army * 0.85);
+          attacker.eco += defender.eco; // loot
+          defender.eco = Math.floor(defender.eco * 0.2);
+          // Inherit territories
+          defender.territories.forEach(function(t){
+            if (attacker.territories.indexOf(t) === -1) attacker.territories.push(t);
+          });
+          // End war between them
+          attacker.war = attacker.war.filter(function(x){return x!==targetId;});
+          defender.war = defender.war.filter(function(x){return x!==cid;});
+          addLog('🏴 ' + attacker.displayName + ' CONQUISTO ' + defender.displayName + '!');
+        } else {
+          addLog(attacker.displayName + ' golpeo a ' + defender.displayName + ' (ataque exitoso)');
         }
-        addLog(attacker.displayName + ' INVADIO ' + defender.displayName + ' (perdio ' + lost + ' tropas)');
       } else {
         attacker.army = Math.floor(attacker.army * 0.6);
-        defender.army -= Math.floor(defender.army * 0.15);
-        addLog(attacker.displayName + ' fue REPELIDO al invadir ' + defender.displayName);
+        defender.army -= Math.floor(defender.army * 0.1);
+        defender.morale = Math.min(100, (defender.morale || 0) + 5);
+        addLog(attacker.displayName + ' fue REPELIDO por ' + defender.displayName);
       }
     });
     delete attacker._invasions;
@@ -392,7 +423,7 @@ function commandCountry(sid, command, fallbackCountry, callback) {
       }
     }
 
-    var sysPrompt = 'Sos el asesor estrategico supremo de ' + mine.displayName + ' en ' + (state.scenario === '1936' ? '1936 (visperas WWII)' : '2026 (tension moderna)') + ', año ' + state.turn + ' del juego.\n\n' +
+    var sysPrompt = 'Sos el asesor estrategico supremo de ' + mine.displayName + ' en ' + (state.scenario === '1936' ? '1936 (visperas WWII)' : '2026 (tension moderna)') + ', fecha actual ' + fmtDate(getCurrentDate()) + '.\n\n' +
       'TU PAIS:\n' +
       '- ID: ' + p.country + '\n' +
       '- Oro: ' + mine.eco + ' (ingreso: ' + mine.ecoIncome + '/año)\n' +
@@ -615,9 +646,10 @@ function endGame() {
 }
 
 function addLog(msg) {
-  state.log.push({ time: Date.now(), msg: msg, turn: state.turn });
+  var dateStr = state.phase === 'playing' ? fmtDate(getCurrentDate()) : '';
+  state.log.push({ time: Date.now(), msg: msg, date: dateStr });
   if (state.log.length > 50) state.log.shift();
-  io.emit('log', { msg: msg, turn: state.turn });
+  io.emit('log', { msg: msg, date: dateStr });
 }
 
 function addChat(name, color, msg) {
@@ -689,9 +721,10 @@ io.on('connection', function(socket) {
     applyAction(socket.id, data);
   });
 
-  socket.on('nextTurn', function() {
+  socket.on('advanceTime', function(data) {
     if (state.phase !== 'playing') return;
-    nextTurn();
+    var days = parseInt(data && data.days) || 365;
+    advanceTime(days);
   });
 
   socket.on('countryChat', function(data) {
