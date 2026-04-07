@@ -621,6 +621,8 @@ socket.on('lobby', function(data) {
   if (sr.value) sr.dispatchEvent(new Event('input'));
 });
 
+var lobbyPlayers = [];
+
 function getTakenCountries() {
   var taken = {};
   if (gameState && gameState.players) {
@@ -628,16 +630,13 @@ function getTakenCountries() {
       if (gameState.players[sid].country) taken[gameState.players[sid].country] = gameState.players[sid].name;
     }
   }
-  // Also check from lobby data
-  if (lobbyPlayers) {
+  if (lobbyPlayers && lobbyPlayers.forEach) {
     lobbyPlayers.forEach(function(p) {
       if (p.country) taken[p.country] = p.name;
     });
   }
   return taken;
 }
-
-var lobbyPlayers = [];
 
 function buildFeaturedCards() {
   var cont = document.getElementById('featuredCountries');
@@ -831,21 +830,21 @@ function drawWorldMap() {
   var w = wmCvs.width / dpr, h = wmCvs.height / dpr;
   wmCtx.setTransform(dpr,0,0,dpr,0,0);
 
-  // Deep navy ocean (EU4 style)
-  var oceanGrad = wmCtx.createRadialGradient(w/2, h/2, h*0.2, w/2, h/2, h*0.9);
-  oceanGrad.addColorStop(0, '#2a4868');
-  oceanGrad.addColorStop(0.6, '#1e3550');
-  oceanGrad.addColorStop(1, '#0e2238');
+  // Deep navy ocean
+  var oceanGrad = wmCtx.createRadialGradient(w/2, h/2, h*0.2, w/2, h/2, h*1.0);
+  oceanGrad.addColorStop(0, '#1f3d5e');
+  oceanGrad.addColorStop(0.5, '#152e48');
+  oceanGrad.addColorStop(1, '#0a1b2e');
   wmCtx.fillStyle = oceanGrad;
   wmCtx.fillRect(0, 0, w, h);
 
-  // Ocean wave texture
-  wmCtx.strokeStyle = 'rgba(120,170,210,.08)';
+  // Subtle ocean texture
+  wmCtx.strokeStyle = 'rgba(150,200,230,.04)';
   wmCtx.lineWidth = 1;
-  for (var lat = 0; lat < h; lat += 24) {
+  for (var lat = 0; lat < h; lat += 18) {
     wmCtx.beginPath();
-    for (var lx = 0; lx <= w; lx += 8) {
-      var ly = lat + Math.sin(lx*0.02 + lat*0.03)*2;
+    for (var lx = 0; lx <= w; lx += 4) {
+      var ly = lat + Math.sin(lx*0.015 + lat*0.04)*1.5;
       if (lx === 0) wmCtx.moveTo(lx, ly); else wmCtx.lineTo(lx, ly);
     }
     wmCtx.stroke();
@@ -857,25 +856,25 @@ function drawWorldMap() {
     if (data.owner && gameState.players[data.owner]) {
       ownedColors[cid] = gameState.players[data.owner].color;
     } else if (data.controlledBy) {
-      ownedColors[cid] = '#5a6a85';
+      ownedColors[cid] = '#6b7a92';
     }
   }
-  if (inspectCountry) ownedColors[inspectCountry] = '#1a1a2a';
+  if (inspectCountry) ownedColors[inspectCountry] = '#2a1810';
 
   wmCtx.save();
   wmCtx.translate(mapTransform.x + mapOffX, mapTransform.y + mapOffY);
   wmCtx.scale(mapTransform.scale, mapTransform.scale);
 
   if (WORLD_LOADED) {
-    // Country shadows
-    wmCtx.fillStyle = 'rgba(0,10,20,.4)';
+    // Layered shadow for depth
+    wmCtx.fillStyle = 'rgba(0,5,15,.6)';
     for (var iso0 in WORLD_GEO) {
       var polys0 = WORLD_GEO[iso0];
       polys0.forEach(function(ring) {
         wmCtx.beginPath();
         ring.forEach(function(pt, i) {
-          var x = (pt[0]/1000)*mapDrawW + 2.5/mapTransform.scale;
-          var y = (pt[1]/500)*mapDrawH + 2.5/mapTransform.scale;
+          var x = (pt[0]/1000)*mapDrawW + 3/mapTransform.scale;
+          var y = (pt[1]/500)*mapDrawH + 3/mapTransform.scale;
           if (i===0) wmCtx.moveTo(x,y); else wmCtx.lineTo(x,y);
         });
         wmCtx.closePath();
@@ -883,9 +882,10 @@ function drawWorldMap() {
       });
     }
 
-    // Country fills
-    wmCtx.lineWidth = 0.7 / mapTransform.scale;
-    wmCtx.strokeStyle = 'rgba(0,8,18,.7)';
+    // Country fills with thicker border
+    wmCtx.lineWidth = 1.2 / mapTransform.scale;
+    wmCtx.strokeStyle = 'rgba(40,25,15,.9)';
+    wmCtx.lineJoin = 'round';
     for (var iso in WORLD_GEO) {
       var polys = WORLD_GEO[iso];
       var fill = ownedColors[iso] || colorForCountry(iso);
@@ -903,8 +903,8 @@ function drawWorldMap() {
       });
     }
 
-    // Subtle land texture overlay
-    wmCtx.fillStyle = 'rgba(255,250,230,.04)';
+    // Aged paper texture overlay (warm tone)
+    wmCtx.fillStyle = 'rgba(220,180,120,.06)';
     for (var iso2 in WORLD_GEO) {
       var polys2 = WORLD_GEO[iso2];
       polys2.forEach(function(ring) {
@@ -919,7 +919,7 @@ function drawWorldMap() {
       });
     }
 
-    // Country names - Cinzel serif, capitalized, with shadow (EU4 style)
+    // Country names - dark brown ink, large, EU4 style
     COUNTRIES.forEach(function(c) {
       var data = gameState.countries[c.id];
       if (!data) return;
@@ -929,27 +929,31 @@ function drawWorldMap() {
       var y = (ctr[1]/500)*mapDrawH;
       var alias = (gameState.aliases || {})[c.id];
       var label = ((alias && alias.name) || c.name).toUpperCase();
-      var fontSize = Math.max(8, 13/mapTransform.scale);
-      var minScale = label.length > 10 ? 1.4 : (label.length > 6 ? 0.9 : 0.7);
+      var fontSize = Math.max(9, 15/mapTransform.scale);
+      var minScale = label.length > 12 ? 1.6 : (label.length > 7 ? 1.0 : 0.7);
       if (mapTransform.scale >= minScale || c.id === inspectCountry || c.id === myCountry) {
-        wmCtx.font = '700 ' + fontSize + 'px "Cinzel", serif';
+        wmCtx.font = '900 ' + fontSize + 'px "Cinzel", serif';
         wmCtx.textAlign = 'center';
         wmCtx.textBaseline = 'middle';
         wmCtx.lineJoin = 'round';
-        // Dark shadow
-        wmCtx.fillStyle = 'rgba(0,0,0,.7)';
-        wmCtx.fillText(label, x + 1.2/mapTransform.scale, y + 1.2/mapTransform.scale);
-        // Outline
-        wmCtx.lineWidth = 3/mapTransform.scale;
-        wmCtx.strokeStyle = 'rgba(0,0,0,.85)';
+        // Letter spacing simulation - draw with light cream outline
+        wmCtx.lineWidth = 4/mapTransform.scale;
+        wmCtx.strokeStyle = 'rgba(245,230,200,.85)';
         wmCtx.strokeText(label, x, y);
-        // Light fill
-        wmCtx.fillStyle = '#f5ead4';
+        // Dark brown ink fill (like aged ink)
+        wmCtx.fillStyle = '#2a1810';
         wmCtx.fillText(label, x, y);
       }
     });
   }
   wmCtx.restore();
+
+  // Vignette around edges
+  var vignette = wmCtx.createRadialGradient(w/2, h/2, h*0.4, w/2, h/2, h*0.9);
+  vignette.addColorStop(0, 'rgba(0,0,0,0)');
+  vignette.addColorStop(1, 'rgba(0,0,0,.4)');
+  wmCtx.fillStyle = vignette;
+  wmCtx.fillRect(0, 0, w, h);
 }
 
 // ── Zoom and Pan ──
