@@ -150,7 +150,8 @@
       <div id="panelStats"></div>
       <div class="tabs">
         <div class="tab act" data-t="actions">Acciones</div>
-        <div class="tab" data-t="chat">Chat IA</div>
+        <div class="tab" data-t="chat">Diplomacia IA</div>
+        <div class="tab" id="tabCmdBtn" data-t="cmd" style="display:none">Comandos IA</div>
       </div>
       <div class="tabContent act" id="tabActions"></div>
       <div class="tabContent" id="tabChat">
@@ -159,6 +160,17 @@
           <form id="ccForm" onsubmit="sendCountryChat(event)">
             <input type="text" id="ccInput" placeholder="Mensaje al lider..." maxlength="200" autocomplete="off">
             <button type="submit" id="ccSend">Enviar</button>
+          </form>
+        </div>
+      </div>
+      <div class="tabContent" id="tabCmd">
+        <div id="cmdChat" style="display:flex;flex-direction:column;flex:1;min-height:140px;max-height:240px">
+          <div id="cmdMsgs" style="flex:1;overflow-y:auto;background:rgba(0,0,0,.3);border-radius:8px;padding:6px;margin-bottom:6px;font-size:11px;line-height:1.4"></div>
+          <form id="cmdForm" onsubmit="sendCommand(event)">
+            <div style="display:flex;gap:4px">
+              <input type="text" id="cmdInput" placeholder="Ej: construir 3 fabricas" maxlength="200" autocomplete="off" style="flex:1;padding:7px 10px;font-size:11px;border:1px solid rgba(167,139,250,.2);border-radius:7px;background:rgba(167,139,250,.05);color:#fff;outline:none;font-family:Outfit,sans-serif">
+              <button type="submit" style="padding:7px 12px;font-size:10px;font-weight:700;border:none;border-radius:7px;background:rgba(167,139,250,.25);color:#A78BFA;cursor:pointer;font-family:Space Grotesk,sans-serif">EJECUTAR</button>
+            </div>
           </form>
         </div>
       </div>
@@ -597,13 +609,17 @@ function updatePanel(cid) {
   var stats = document.getElementById('panelStats');
   stats.innerHTML =
     '<div class="stat"><span>Lider</span><span class="v">'+ownerName+'</span></div>'+
-    '<div class="stat"><span>Ejercito</span><span class="v">'+data.army+'</span></div>'+
-    '<div class="stat"><span>Economia</span><span class="v">'+data.eco+'</span></div>'+
-    '<div class="stat"><span>Tech</span><span class="v">'+data.tech+'</span></div>'+
-    '<div class="stat"><span>Aliados</span><span class="v" style="color:#4ADE80">'+(data.allies.length?data.allies.join(', '):'-')+'</span></div>'+
-    '<div class="stat"><span>En guerra</span><span class="v" style="color:#F87171">'+(data.war.length?data.war.join(', '):'-')+'</span></div>';
+    '<div class="stat"><span>💰 Oro</span><span class="v">'+data.eco+' (+'+(data.ecoIncome||0)+'/año)</span></div>'+
+    '<div class="stat"><span>⚔️ Ejercito</span><span class="v">'+data.army+'</span></div>'+
+    '<div class="stat"><span>⚓ Marina</span><span class="v">'+(data.navy||0)+'</span></div>'+
+    '<div class="stat"><span>🏭 Industria</span><span class="v">'+(data.industry||0)+'</span></div>'+
+    '<div class="stat"><span>🛡️ Defensa</span><span class="v">'+(data.defense||0)+'</span></div>'+
+    '<div class="stat"><span>🔬 Tec</span><span class="v">'+data.tech+'/10</span></div>'+
+    '<div class="stat"><span>📊 Moral</span><span class="v">'+(data.morale||0)+'/100</span></div>'+
+    '<div class="stat"><span>🤝 Aliados</span><span class="v" style="color:#4ADE80">'+(data.allies.length?data.allies.join(', '):'-')+'</span></div>'+
+    '<div class="stat"><span>⚡ Guerra</span><span class="v" style="color:#F87171">'+(data.war.length?data.war.join(', '):'-')+'</span></div>';
 
-  // Action tab
+  // Action tab - quick diplomatic actions only
   var acts = document.getElementById('tabActions');
   acts.innerHTML = '';
   if (myCountry && cid !== myCountry) {
@@ -618,9 +634,26 @@ function updatePanel(cid) {
     if (atWar) {
       addBtn(acts, '🛡️ Invadir', function(){socket.emit('action',{type:'invade',target:cid});});
     }
+    if (acts.innerHTML === '') {
+      acts.innerHTML = '<div style="color:rgba(255,255,255,.3);font-size:11px;text-align:center;padding:10px">Ya estan vinculados.<br>Usa el chat IA.</div>';
+    }
   } else if (cid === myCountry) {
-    addBtn(acts, '🏗️ Reclutar 50 tropas (-100 oro)', function(){socket.emit('action',{type:'build',amount:50});});
-    addBtn(acts, '🏗️ Reclutar 100 tropas (-200 oro)', function(){socket.emit('action',{type:'build',amount:100});});
+    acts.innerHTML = '<div style="color:rgba(255,255,255,.45);font-size:11px;padding:8px;line-height:1.6">Usa la pestaña <b style="color:#A78BFA">Comandos IA</b> para dar ordenes a tu pais en lenguaje natural.<br><br>Ejemplos:<br>• "construir 3 fabricas"<br>• "reclutar 200 tropas"<br>• "comprar 10 barcos"<br>• "fortificar fronteras"<br>• "investigar tecnologia"<br>• "campaña de propaganda"</div>';
+  }
+
+  // Show/hide commands tab
+  var cmdTab = document.getElementById('tabCmdBtn');
+  if (cid === myCountry) {
+    cmdTab.style.display = '';
+  } else {
+    cmdTab.style.display = 'none';
+    // If currently on cmd tab, switch to actions
+    if (document.getElementById('tabCmd').classList.contains('act')) {
+      document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('act');});
+      document.querySelectorAll('.tabContent').forEach(function(x){x.classList.remove('act');});
+      document.querySelector('.tab[data-t="actions"]').classList.add('act');
+      document.getElementById('tabActions').classList.add('act');
+    }
   }
 }
 
@@ -640,6 +673,37 @@ document.querySelectorAll('.tab').forEach(function(t) {
     t.classList.add('act');
     document.getElementById('tab'+t.getAttribute('data-t').charAt(0).toUpperCase()+t.getAttribute('data-t').slice(1)).classList.add('act');
   };
+});
+
+window.sendCommand = function(e) {
+  e.preventDefault();
+  var inp = document.getElementById('cmdInput');
+  var msg = inp.value.trim();
+  if (!msg) return;
+  var el = document.getElementById('cmdMsgs');
+  var div = document.createElement('div');
+  div.style.color = '#A78BFA';
+  div.style.textAlign = 'right';
+  div.innerHTML = '<b>Vos:</b> '+esc(msg);
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+  socket.emit('commandCountry', { msg: msg });
+  inp.value = '';
+};
+
+socket.on('commandResult', function(d) {
+  var el = document.getElementById('cmdMsgs');
+  var div = document.createElement('div');
+  div.style.margin = '4px 0';
+  if (d.ok) {
+    div.style.color = '#4ADE80';
+    div.innerHTML = '✓ ' + esc(d.narrative || 'Ejecutado');
+  } else {
+    div.style.color = '#F87171';
+    div.innerHTML = '✗ ' + esc(d.msg || 'Error');
+  }
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
 });
 
 window.sendCountryChat = function(e) {
