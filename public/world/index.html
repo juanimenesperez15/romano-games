@@ -12,7 +12,7 @@
     /* Lobby */
     #lobby{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:100;background:radial-gradient(ellipse,rgba(10,14,26,.97),rgba(5,7,13,.99));overflow-y:auto;padding:14px}
     #lobby.h{display:none}
-    .lb{text-align:center;padding:24px 28px;border-radius:20px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);max-width:540px;width:100%}
+    .lb{text-align:center;padding:20px 24px;border-radius:20px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);max-width:900px;width:100%}
     .lb h1{font-family:'Space Grotesk',sans-serif;font-size:clamp(22px,5vw,32px);font-weight:800;background:linear-gradient(135deg,#60A5FA,#A78BFA,#F472B6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
     .lb .sub{color:rgba(255,255,255,.2);font-size:9px;letter-spacing:3px;text-transform:uppercase;margin-bottom:18px}
     #ni{display:block;width:240px;max-width:80vw;margin:0 auto 12px;padding:11px 16px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;border:1.5px solid rgba(255,255,255,.06);border-radius:12px;background:rgba(255,255,255,.03);color:#fff;text-align:center;outline:none}
@@ -24,7 +24,9 @@
     .opt.sel{border-color:#A78BFA;color:#A78BFA;background:rgba(167,139,250,.08)}
     .lbl{font-size:9px;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,.25);margin:12px 0 6px}
 
-    #miniMap{display:block;margin:0 auto 6px;border-radius:10px;background:#0a1428;border:1px solid rgba(255,255,255,.06);width:100%;max-width:480px;height:auto;cursor:pointer}
+    #miniMap{display:block;margin:0 auto 6px;border-radius:10px;background:#0a1428;border:1px solid rgba(255,255,255,.06);width:100%;max-width:840px;height:auto;cursor:pointer;aspect-ratio:2/1}
+    #countrySelect{display:block;width:100%;max-width:300px;margin:0 auto 8px;padding:10px 14px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;border:1.5px solid rgba(255,255,255,.08);border-radius:10px;background:rgba(255,255,255,.04);color:#fff;outline:none;cursor:pointer}
+    #countrySelect option{background:#0a0e1a;color:#fff}
     #selCountry{display:flex;align-items:center;justify-content:center;gap:10px;padding:10px;background:rgba(167,139,250,.06);border:1px solid rgba(167,139,250,.15);border-radius:12px;margin:6px 0;min-height:46px}
     #selFlag{font-size:32px}
     #selName{font-weight:700;color:#A78BFA;font-size:14px}
@@ -111,8 +113,11 @@
       <button class="opt" data-d="hard">Dificil</button>
     </div>
 
-    <div class="lbl">Elegi tu pais (click en el mapa)</div>
-    <canvas id="miniMap" width="480" height="240"></canvas>
+    <div class="lbl">Elegi tu pais (toca el mapa o usa la lista)</div>
+    <canvas id="miniMap" width="900" height="450"></canvas>
+    <select id="countrySelect">
+      <option value="">-- Elegi un pais --</option>
+    </select>
     <div id="selCountry">
       <div id="selFlag">🌍</div>
       <div>
@@ -343,6 +348,16 @@ function updateSelDisplay() {
 
 document.getElementById('startBtn').onclick = function() { socket.emit('start'); };
 
+document.getElementById('countrySelect').addEventListener('change', function(e) {
+  var iso = e.target.value;
+  if (!iso) return;
+  autoJoin();
+  selectedCountry = iso;
+  setTimeout(function(){ socket.emit('selectCountry', { country: iso }); }, 100);
+  updateSelDisplay();
+  drawMiniMap();
+});
+
 document.querySelectorAll('#difficultyRow .opt').forEach(function(b) {
   b.onclick = function() {
     document.querySelectorAll('#difficultyRow .opt').forEach(function(x){x.classList.remove('sel');});
@@ -403,6 +418,22 @@ socket.on('lobby', function(data) {
     el.textContent = p.name + (p.country ? ' (' + p.country + ')' : '');
     lp.appendChild(el);
   });
+  // Populate country dropdown
+  var sel = document.getElementById('countrySelect');
+  if (sel.children.length <= 1) {
+    var sorted = COUNTRIES.slice().sort(function(a,b){
+      var an = (ALIASES[a.id] && ALIASES[a.id].name) || a.name;
+      var bn = (ALIASES[b.id] && ALIASES[b.id].name) || b.name;
+      return an.localeCompare(bn);
+    });
+    sorted.forEach(function(c) {
+      var opt = document.createElement('option');
+      opt.value = c.id;
+      var alias = ALIASES[c.id];
+      opt.textContent = ((alias && alias.flag) || c.flag) + '  ' + ((alias && alias.name) || c.name);
+      sel.appendChild(opt);
+    });
+  }
   drawMiniMap();
   updateSelDisplay();
 });
