@@ -48,6 +48,9 @@
     #game{display:none;position:fixed;inset:0;flex-direction:column;background:#fff}
     #game.s{display:flex}
     #topBar{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#1a1a1a;color:#fff;border-bottom:1px solid rgba(0,0,0,.1);flex-shrink:0;gap:6px}
+    #myCountryHeader{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.1);padding:5px 12px;border-radius:10px}
+    #myFlag{font-size:22px;line-height:1}
+    #myName{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#fff;white-space:nowrap}
     #turnLabel{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;flex:1;text-align:center}
     #nextTurnBtn{padding:7px 16px;font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;border:none;border-radius:8px;background:#fff;color:#1a1a1a;cursor:pointer;letter-spacing:.5px}
     #backHome{background:none;border:none;color:rgba(255,255,255,.6);font-size:16px;cursor:pointer;padding:4px}
@@ -181,6 +184,10 @@
 <div id="game">
   <div id="topBar">
     <button id="backHome" onclick="location.href='/'">&#8592;</button>
+    <div id="myCountryHeader">
+      <span id="myFlag">🌍</span>
+      <span id="myName">-</span>
+    </div>
     <div id="turnLabel">Año 1/15</div>
     <button id="nextTurnBtn">SIGUIENTE AÑO ►</button>
   </div>
@@ -216,7 +223,7 @@
       <button id="cpHablar" onclick="openHablarFromPopup()">💬 Hablar</button>
     </div>
     <!-- Floating Actions button -->
-    <button id="floatActions" onclick="openMyActions()">⚡ MIS ACCIONES</button>
+    <button id="floatActions" onclick="openMyActions()"><span id="faFlag">🌍</span> MIS ACCIONES</button>
     <!-- Actions modal (full screen for own country commands) -->
     <div id="actionsModal">
       <div id="actionsBox">
@@ -301,7 +308,12 @@ function loadWorldGeo() {
     .then(function(data) {
       WORLD_GEO = {};
       data.features.forEach(function(f) {
-        var iso = f.properties.ISO_A3 || f.properties.ADM0_A3;
+        // Natural Earth has bugs where ISO_A3 = '-99' for some countries (France, Norway, etc)
+        // Always try ADM0_A3 first as it's more reliable
+        var iso = f.properties.ADM0_A3 || f.properties.ISO_A3;
+        if (iso === '-99' || !iso) {
+          iso = f.properties.ISO_A3 || f.properties.ADM0_A3;
+        }
         if (!iso || iso === '-99') return;
         var polys = [];
         var geom = f.geometry;
@@ -570,8 +582,25 @@ socket.on('state', function(s) {
       }
     }
   }
-  // Show/hide actions button
-  document.getElementById('floatActions').style.display = myCountry ? 'block' : 'none';
+  // Show/hide actions button + update header flag
+  var fa = document.getElementById('floatActions');
+  var mch = document.getElementById('myCountryHeader');
+  if (myCountry) {
+    fa.style.display = 'block';
+    mch.style.display = 'flex';
+    var c = COUNTRIES.find(function(x){return x.id===myCountry;});
+    if (c) {
+      var alias = ALIASES[myCountry];
+      var flag = (alias && alias.flag) || c.flag;
+      var name = (alias && alias.name) || c.name;
+      document.getElementById('myFlag').textContent = flag;
+      document.getElementById('myName').textContent = name;
+      document.getElementById('faFlag').textContent = flag;
+    }
+  } else {
+    fa.style.display = 'none';
+    mch.style.display = 'none';
+  }
   drawWorldMap();
   if (inspectCountry && inspectCountry !== myCountry) updatePanel(inspectCountry);
 });
