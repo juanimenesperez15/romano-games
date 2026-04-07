@@ -166,32 +166,88 @@ var gameState = null;
 var hoveredCountry = null;
 var inspectCountry = null;
 
+// ── Continent shapes (rough world map outlines, in 1000x500 space) ──
+var CONTINENTS = [
+  // North America
+  [[180,80],[320,75],[340,140],[295,225],[245,235],[210,220],[170,175],[155,135],[160,100]],
+  // Central America
+  [[230,225],[265,230],[280,255],[260,265],[235,255]],
+  // South America
+  [[280,240],[330,240],[365,275],[370,335],[345,395],[315,420],[295,400],[290,360],[280,310]],
+  // Europe
+  [[460,105],[555,100],[565,135],[555,180],[510,200],[475,195],[465,170],[455,135]],
+  // Africa
+  [[475,205],[570,200],[595,245],[585,310],[555,360],[525,380],[505,360],[490,310],[480,260]],
+  // Middle East / West Asia
+  [[555,180],[615,175],[625,210],[600,235],[560,225],[555,200]],
+  // Russia / North Asia
+  [[540,80],[800,80],[810,135],[760,160],[680,165],[620,160],[570,140],[545,110]],
+  // South Asia / India
+  [[615,200],[680,200],[690,235],[660,250],[635,235]],
+  // Southeast Asia
+  [[680,215],[745,215],[755,260],[720,285],[695,265],[680,240]],
+  // China
+  [[660,165],[760,165],[770,210],[720,225],[680,210],[665,185]],
+  // Japan
+  [[755,160],[775,160],[780,195],[760,200],[755,180]],
+  // Indonesia / archipelago
+  [[700,260],[765,255],[770,290],[720,295],[700,280]],
+  // Australia
+  [[730,310],[810,310],[820,365],[790,395],[745,390],[730,355]],
+  // New Zealand
+  [[800,365],[820,360],[825,390],[805,400]],
+];
+
 // ── Mini map (lobby) ──
 var miniCvs = document.getElementById('miniMap');
 var mctx = miniCvs.getContext('2d');
 
+function drawContinents(ctx, w, h) {
+  ctx.fillStyle = '#1a2438';
+  ctx.strokeStyle = 'rgba(96,165,250,.2)';
+  ctx.lineWidth = 1;
+  CONTINENTS.forEach(function(poly) {
+    ctx.beginPath();
+    poly.forEach(function(pt, i) {
+      var x = (pt[0]/1000)*w;
+      var y = (pt[1]/500)*h;
+      if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  });
+}
+
 function drawMiniMap() {
   var w = miniCvs.width, h = miniCvs.height;
-  mctx.fillStyle = '#0c1120';
+  // Ocean
+  mctx.fillStyle = '#0a1428';
   mctx.fillRect(0,0,w,h);
-  // Grid
-  mctx.strokeStyle = 'rgba(255,255,255,.03)';
-  for (var i=0;i<10;i++) { mctx.beginPath(); mctx.moveTo(i*w/10,0); mctx.lineTo(i*w/10,h); mctx.stroke(); }
-  for (var j=0;j<5;j++) { mctx.beginPath(); mctx.moveTo(0,j*h/5); mctx.lineTo(w,j*h/5); mctx.stroke(); }
+  // Continents
+  drawContinents(mctx, w, h);
   // Countries
   COUNTRIES.forEach(function(c) {
     var x = (c.x / 1000) * w;
     var y = (c.y / 500) * h;
     var sel = c.id === selectedCountry;
     mctx.beginPath();
-    mctx.arc(x, y, sel ? 4 : 2.5, 0, Math.PI*2);
-    mctx.fillStyle = sel ? '#A78BFA' : 'rgba(255,255,255,.25)';
+    mctx.arc(x, y, sel ? 5 : 3, 0, Math.PI*2);
+    mctx.fillStyle = sel ? '#A78BFA' : 'rgba(255,255,255,.5)';
     mctx.fill();
     if (sel) {
-      mctx.beginPath(); mctx.arc(x, y, 6, 0, Math.PI*2);
-      mctx.strokeStyle = '#A78BFA'; mctx.lineWidth = 1.5; mctx.stroke();
+      mctx.beginPath(); mctx.arc(x, y, 8, 0, Math.PI*2);
+      mctx.strokeStyle = '#A78BFA'; mctx.lineWidth = 2; mctx.stroke();
     }
   });
+}
+
+function autoJoin() {
+  if (joined) return;
+  socket.emit('join', { name: document.getElementById('nameInput').value.trim() || 'Lider' });
+  joined = true;
+  document.getElementById('joinBtn').style.opacity = '0.5';
+  document.getElementById('joinBtn').textContent = 'UNIDO';
 }
 
 miniCvs.addEventListener('click', function(e) {
@@ -208,8 +264,9 @@ miniCvs.addEventListener('click', function(e) {
     if (d < bestD) { bestD = d; best = c; }
   });
   if (best && bestD < 400) {
+    autoJoin(); // auto-join if not joined
     selectedCountry = best.id;
-    socket.emit('selectCountry', { country: best.id });
+    setTimeout(function(){ socket.emit('selectCountry', { country: best.id }); }, 100);
     updateSelDisplay();
     drawMiniMap();
   }
@@ -368,13 +425,11 @@ function drawWorldMap() {
   if (!gameState) return;
   var w = wmCvs.width / dpr, h = wmCvs.height / dpr;
   wmCtx.setTransform(dpr,0,0,dpr,0,0);
-  wmCtx.fillStyle = '#0c1120';
+  wmCtx.fillStyle = '#0a1428';
   wmCtx.fillRect(0,0,w,h);
 
-  // Grid
-  wmCtx.strokeStyle = 'rgba(255,255,255,.03)';
-  for (var i=0;i<10;i++) { wmCtx.beginPath(); wmCtx.moveTo(i*w/10,0); wmCtx.lineTo(i*w/10,h); wmCtx.stroke(); }
-  for (var j=0;j<5;j++) { wmCtx.beginPath(); wmCtx.moveTo(0,j*h/5); wmCtx.lineTo(w,j*h/5); wmCtx.stroke(); }
+  // Continents
+  drawContinents(wmCtx, w, h);
 
   // Countries
   COUNTRIES.forEach(function(c) {
