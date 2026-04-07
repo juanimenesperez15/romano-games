@@ -11,72 +11,83 @@
 
     /* Lobby */
     #lobby{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:100;background:radial-gradient(ellipse,rgba(10,14,26,.97),rgba(5,7,13,.99));overflow-y:auto;padding:14px}
-    #lobby.hidden{display:none}
-    .lb{text-align:center;padding:24px 28px;border-radius:20px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);max-width:520px;width:100%;box-shadow:0 30px 80px rgba(0,0,0,.5)}
-    .lb h1{font-family:'Space Grotesk',sans-serif;font-size:clamp(22px,5vw,32px);font-weight:800;margin-bottom:4px;background:linear-gradient(135deg,#60A5FA,#A78BFA,#F472B6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    #lobby.h{display:none}
+    .lb{text-align:center;padding:24px 28px;border-radius:20px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);max-width:540px;width:100%}
+    .lb h1{font-family:'Space Grotesk',sans-serif;font-size:clamp(22px,5vw,32px);font-weight:800;background:linear-gradient(135deg,#60A5FA,#A78BFA,#F472B6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
     .lb .sub{color:rgba(255,255,255,.2);font-size:9px;letter-spacing:3px;text-transform:uppercase;margin-bottom:18px}
-    #nameInput{display:block;width:240px;max-width:80vw;margin:0 auto 12px;padding:11px 16px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;border:1.5px solid rgba(255,255,255,.06);border-radius:12px;background:rgba(255,255,255,.03);color:#fff;text-align:center;outline:none}
-    .btn{padding:10px 18px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;border:none;border-radius:10px;cursor:pointer;letter-spacing:.3px}
+    #ni{display:block;width:240px;max-width:80vw;margin:0 auto 12px;padding:11px 16px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;border:1.5px solid rgba(255,255,255,.06);border-radius:12px;background:rgba(255,255,255,.03);color:#fff;text-align:center;outline:none}
+    .btn{padding:10px 18px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;border:none;border-radius:10px;cursor:pointer}
     .btn-pri{background:linear-gradient(135deg,#60A5FA,#A78BFA);color:#0a0e1a}
     .btn-sec{background:rgba(255,255,255,.05);color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.08)}
-    .btn:active{transform:scale(.96)}
-    .row{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:10px}
-    .opt{padding:8px 14px;border-radius:10px;border:1.5px solid rgba(255,255,255,.06);background:rgba(255,255,255,.02);color:rgba(255,255,255,.5);cursor:pointer;font-size:11px;font-weight:600;-webkit-tap-highlight-color:transparent}
+    .row{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:8px}
+    .opt{padding:7px 12px;border-radius:8px;border:1.5px solid rgba(255,255,255,.06);background:rgba(255,255,255,.02);color:rgba(255,255,255,.5);cursor:pointer;font-size:11px;font-weight:600;-webkit-tap-highlight-color:transparent}
     .opt.sel{border-color:#A78BFA;color:#A78BFA;background:rgba(167,139,250,.08)}
-    .lbl{font-size:9px;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,.25);margin:14px 0 6px}
+    .lbl{font-size:9px;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,.25);margin:12px 0 6px}
 
-    /* Mini map for country selection */
-    #miniMap{display:block;margin:0 auto 8px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);cursor:pointer;width:100%;max-width:480px;height:auto}
-    #selCountry{display:flex;align-items:center;justify-content:center;gap:10px;padding:10px;background:rgba(167,139,250,.06);border:1px solid rgba(167,139,250,.15);border-radius:12px;margin:8px 0;min-height:46px}
+    #miniMap{display:block;margin:0 auto 6px;border-radius:10px;background:#0a1428;border:1px solid rgba(255,255,255,.06);width:100%;max-width:480px;height:auto;cursor:pointer}
+    #selCountry{display:flex;align-items:center;justify-content:center;gap:10px;padding:10px;background:rgba(167,139,250,.06);border:1px solid rgba(167,139,250,.15);border-radius:12px;margin:6px 0;min-height:46px}
     #selFlag{font-size:32px}
     #selName{font-weight:700;color:#A78BFA;font-size:14px}
-    #selStats{font-size:10px;color:rgba(255,255,255,.4);margin-left:6px}
-
-    #lobbyPlayers{display:flex;gap:5px;justify-content:center;margin:10px 0;flex-wrap:wrap}
+    #lobbyPlayers{display:flex;gap:5px;justify-content:center;margin:8px 0;flex-wrap:wrap}
     .lpp{padding:4px 10px;border-radius:8px;font-size:11px;font-weight:600;color:#0a0e1a}
 
     /* Game UI */
     #game{display:none;position:fixed;inset:0;flex-direction:column}
-    #game.show{display:flex}
-    #topBar{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(0,0,0,.4);border-bottom:1px solid rgba(255,255,255,.04);flex-shrink:0}
-    #turnLabel{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700}
-    #timeLabel{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:800;color:#A78BFA}
-    #backHome{background:none;border:none;color:rgba(255,255,255,.3);font-size:14px;cursor:pointer;padding:4px}
+    #game.s{display:flex}
+    #topBar{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(0,0,0,.5);border-bottom:1px solid rgba(255,255,255,.04);flex-shrink:0;gap:6px}
+    #turnLabel{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;flex:1;text-align:center}
+    #nextTurnBtn{padding:6px 14px;font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;border:none;border-radius:8px;background:linear-gradient(135deg,#60A5FA,#A78BFA);color:#0a0e1a;cursor:pointer}
+    #backHome{background:none;border:none;color:rgba(255,255,255,.3);font-size:16px;cursor:pointer;padding:4px}
 
-    #mainArea{flex:1;position:relative;overflow:hidden;display:flex;flex-direction:column}
-    #mapWrap{flex:1;position:relative;overflow:hidden}
+    #mainArea{flex:1;position:relative;overflow:hidden}
+    #mapWrap{position:absolute;inset:0;overflow:hidden}
     canvas#worldMap{display:block;width:100%;height:100%}
 
-    /* Side panel */
-    #panel{position:absolute;right:8px;top:8px;width:240px;max-height:calc(100% - 16px);background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px;backdrop-filter:blur(8px);overflow-y:auto;z-index:10}
-    #panelFlag{font-size:36px;text-align:center}
-    #panelName{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:800;text-align:center;margin-bottom:6px}
-    .stat{display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.6);padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+    /* Side panels */
+    #panel{position:absolute;right:8px;top:8px;width:260px;max-height:calc(100% - 16px);background:rgba(10,14,26,.92);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px;backdrop-filter:blur(10px);overflow-y:auto;z-index:10;display:none;flex-direction:column}
+    #panel.show{display:flex}
+    #panelHeader{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+    #panelFlag{font-size:32px}
+    #panelName{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:800;flex:1}
+    #panelClose{background:none;border:none;color:rgba(255,255,255,.4);cursor:pointer;font-size:16px;padding:0 4px}
+    .stat{display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.55);padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04)}
     .stat .v{font-weight:700;color:#fff}
-    .actions{margin-top:8px;display:flex;flex-direction:column;gap:5px}
-    .actbtn{padding:7px 10px;font-size:11px;font-weight:600;border-radius:8px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:rgba(255,255,255,.7);cursor:pointer;text-align:left}
+    .tabs{display:flex;gap:4px;margin:8px 0 4px}
+    .tab{flex:1;padding:6px 8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:8px;cursor:pointer;font-size:10px;font-weight:600;text-align:center;color:rgba(255,255,255,.5)}
+    .tab.act{background:rgba(167,139,250,.15);border-color:#A78BFA;color:#A78BFA}
+    .tabContent{display:none;flex-direction:column;gap:6px;flex:1;min-height:0}
+    .tabContent.act{display:flex}
+    .actbtn{padding:8px 12px;font-size:11px;font-weight:600;border-radius:8px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:rgba(255,255,255,.7);cursor:pointer;text-align:left;font-family:'Outfit',sans-serif}
     .actbtn:active{background:rgba(167,139,250,.15)}
 
-    /* Chat at bottom */
-    #chat{position:absolute;left:8px;bottom:8px;width:280px;max-width:calc(100% - 16px);height:140px;background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.06);border-radius:12px;display:flex;flex-direction:column;backdrop-filter:blur(6px);z-index:10}
-    #chatMsgs{flex:1;overflow-y:auto;padding:6px 10px;font-size:11px;line-height:1.4}
-    .cmsg{margin:1px 0}.cmsg .n{font-weight:700;margin-right:4px}
-    .csys{color:rgba(167,139,250,.5);font-style:italic;font-size:10px}
-    #chatForm{display:flex;gap:4px;padding:6px;border-top:1px solid rgba(255,255,255,.04)}
-    #chatInput{flex:1;padding:6px 10px;font-size:11px;border:1px solid rgba(255,255,255,.05);border-radius:6px;background:rgba(255,255,255,.03);color:#fff;outline:none;font-family:'Outfit',sans-serif}
-    #chatSend{padding:6px 10px;font-size:10px;font-weight:700;border:none;border-radius:6px;background:rgba(167,139,250,.15);color:#A78BFA;cursor:pointer;font-family:'Space Grotesk',sans-serif}
+    /* Country chat panel */
+    #countryChat{display:flex;flex-direction:column;flex:1;min-height:140px;max-height:240px}
+    #ccMsgs{flex:1;overflow-y:auto;background:rgba(0,0,0,.3);border-radius:8px;padding:6px;margin-bottom:6px;font-size:11px;line-height:1.4}
+    .ccm{margin:2px 0}
+    .ccm.user{color:#A78BFA;text-align:right}
+    .ccm.ai{color:rgba(255,255,255,.8)}
+    #ccForm{display:flex;gap:4px}
+    #ccInput{flex:1;padding:7px 10px;font-size:11px;border:1px solid rgba(255,255,255,.05);border-radius:7px;background:rgba(255,255,255,.03);color:#fff;outline:none;font-family:'Outfit',sans-serif}
+    #ccSend{padding:7px 12px;font-size:10px;font-weight:700;border:none;border-radius:7px;background:rgba(167,139,250,.2);color:#A78BFA;cursor:pointer;font-family:'Space Grotesk',sans-serif}
+
+    /* Bottom log */
+    #log{position:absolute;left:8px;bottom:8px;width:260px;max-width:calc(100% - 16px);height:100px;background:rgba(10,14,26,.92);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:6px 10px;overflow-y:auto;backdrop-filter:blur(8px);font-size:10px;line-height:1.4;z-index:9}
+    .lmsg{color:rgba(255,255,255,.6);margin:1px 0}
+    .lmsg.sys{color:rgba(167,139,250,.6);font-style:italic}
 
     /* Overlay */
     #overlay{display:none;position:fixed;inset:0;z-index:90;background:rgba(5,7,13,.94);backdrop-filter:blur(8px);align-items:center;justify-content:center;text-align:center;flex-direction:column;padding:20px}
-    #overlay.show{display:flex}
+    #overlay.s{display:flex}
     #overlay h2{font-family:'Space Grotesk',sans-serif;font-size:clamp(22px,5vw,30px);font-weight:800;margin-bottom:6px}
     #overlay p{color:rgba(255,255,255,.4);font-size:13px}
 
     @media(max-width:700px){
-      #panel{width:200px;font-size:10px;padding:8px;top:4px;right:4px}
-      #chat{width:calc(100% - 16px);height:110px;left:8px;right:8px;bottom:4px}
-      #panelFlag{font-size:28px}
+      #panel{width:calc(100% - 16px);right:8px;left:8px;top:48px;max-height:50vh}
+      #log{width:calc(100% - 16px);left:8px;right:8px;height:80px;bottom:6px}
+      #panelFlag{font-size:26px}
       #panelName{font-size:12px}
+      .stat{font-size:10px}
+      #countryChat{max-height:150px}
     }
   </style>
 </head>
@@ -86,9 +97,8 @@
 <div id="lobby">
   <div class="lb">
     <h1>Imperio de Romano</h1>
-    <div class="sub">grand strategy multiplayer</div>
-
-    <input type="text" id="nameInput" placeholder="Tu nombre..." maxlength="14" value="Romano">
+    <div class="sub">grand strategy mundial</div>
+    <input type="text" id="ni" placeholder="Tu nombre..." maxlength="14" value="Romano">
 
     <div class="lbl">Escenario</div>
     <div class="row" id="scenarioRow"></div>
@@ -107,17 +117,13 @@
       <div id="selFlag">🌍</div>
       <div>
         <div id="selName">Sin pais</div>
-        <div id="selStats"></div>
       </div>
     </div>
 
     <div class="lbl">Jugadores</div>
     <div id="lobbyPlayers"></div>
 
-    <div style="display:flex;gap:8px;justify-content:center;margin-top:14px">
-      <button class="btn btn-sec" id="joinBtn">UNIRSE</button>
-      <button class="btn btn-pri" id="startBtn">EMPEZAR</button>
-    </div>
+    <button class="btn btn-pri" id="startBtn" style="margin-top:14px">EMPEZAR</button>
   </div>
 </div>
 
@@ -126,24 +132,33 @@
   <div id="topBar">
     <button id="backHome" onclick="location.href='/'">&#8592;</button>
     <div id="turnLabel">Año 1/15</div>
-    <div id="timeLabel">0:30</div>
-    <div style="width:30px"></div>
+    <button id="nextTurnBtn">SIGUIENTE AÑO ►</button>
   </div>
   <div id="mainArea">
     <div id="mapWrap"><canvas id="worldMap"></canvas></div>
     <div id="panel">
-      <div id="panelFlag">🌍</div>
-      <div id="panelName">Selecciona un pais</div>
+      <div id="panelHeader">
+        <div id="panelFlag">🌍</div>
+        <div id="panelName">-</div>
+        <button id="panelClose" onclick="closePanel()">✕</button>
+      </div>
       <div id="panelStats"></div>
-      <div class="actions" id="panelActions"></div>
+      <div class="tabs">
+        <div class="tab act" data-t="actions">Acciones</div>
+        <div class="tab" data-t="chat">Chat IA</div>
+      </div>
+      <div class="tabContent act" id="tabActions"></div>
+      <div class="tabContent" id="tabChat">
+        <div id="countryChat">
+          <div id="ccMsgs"></div>
+          <form id="ccForm" onsubmit="sendCountryChat(event)">
+            <input type="text" id="ccInput" placeholder="Mensaje al lider..." maxlength="200" autocomplete="off">
+            <button type="submit" id="ccSend">Enviar</button>
+          </form>
+        </div>
+      </div>
     </div>
-    <div id="chat">
-      <div id="chatMsgs"></div>
-      <form id="chatForm" onsubmit="sendChat(event)">
-        <input type="text" id="chatInput" placeholder="Mensaje..." maxlength="200" autocomplete="off">
-        <button type="submit" id="chatSend">Enviar</button>
-      </form>
-    </div>
+    <div id="log"></div>
   </div>
 </div>
 
@@ -155,64 +170,62 @@
 'use strict';
 var socket = io('/world', {transports:['websocket']});
 var COUNTRIES = [];
-var NEIGHBORS = {};
 var SCENARIOS_LIST = [];
+var ALIASES = {};
 var selScenario = '1936';
 var selDifficulty = 'normal';
 var selectedCountry = null;
 var myCountry = null;
 var joined = false;
 var gameState = null;
-var hoveredCountry = null;
 var inspectCountry = null;
 
-// ── Real world map data loaded from CDN ──
-// Format: { ISO3: [[[x,y],[x,y],...], [...]] } - one or more polygon rings per country
+// ── Real GeoJSON world map ──
 var WORLD_GEO = null;
 var WORLD_LOADED = false;
-var COUNTRY_CENTROIDS = {}; // { ISO3: [x, y] }
+var COUNTRY_CENTROIDS = {};
 
 function project(lon, lat) {
   return [(lon + 180) / 360 * 1000, (90 - lat) / 180 * 500];
 }
 
 function loadWorldGeo() {
-  // Try multiple CDN sources for reliability
-  var url = 'https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/ne_110m_admin_0_countries.geojson';
-  fetch(url).then(function(r) { return r.json(); }).then(function(data) {
-    WORLD_GEO = {};
-    data.features.forEach(function(f) {
-      var iso = f.properties.ISO_A3 || f.properties.ADM0_A3;
-      if (!iso || iso === '-99') return;
-      var polys = [];
-      var geom = f.geometry;
-      if (!geom) return;
-      if (geom.type === 'Polygon') {
-        polys.push(geom.coordinates[0].map(function(pt){return project(pt[0], pt[1]);}));
-      } else if (geom.type === 'MultiPolygon') {
-        geom.coordinates.forEach(function(poly) {
-          polys.push(poly[0].map(function(pt){return project(pt[0], pt[1]);}));
-        });
-      }
-      WORLD_GEO[iso] = polys;
-      // Compute centroid (simple average of first poly)
-      if (polys[0] && polys[0].length) {
-        var sx = 0, sy = 0;
-        polys[0].forEach(function(p){ sx += p[0]; sy += p[1]; });
-        COUNTRY_CENTROIDS[iso] = [sx / polys[0].length, sy / polys[0].length];
-      }
+  fetch('https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/ne_110m_admin_0_countries.geojson')
+    .then(function(r){return r.json();})
+    .then(function(data) {
+      WORLD_GEO = {};
+      data.features.forEach(function(f) {
+        var iso = f.properties.ISO_A3 || f.properties.ADM0_A3;
+        if (!iso || iso === '-99') return;
+        var polys = [];
+        var geom = f.geometry;
+        if (!geom) return;
+        if (geom.type === 'Polygon') {
+          polys.push(geom.coordinates[0].map(function(pt){return project(pt[0], pt[1]);}));
+        } else if (geom.type === 'MultiPolygon') {
+          geom.coordinates.forEach(function(poly) {
+            polys.push(poly[0].map(function(pt){return project(pt[0], pt[1]);}));
+          });
+        }
+        WORLD_GEO[iso] = polys;
+        // Compute centroid using largest polygon (mainland)
+        var biggest = polys[0];
+        polys.forEach(function(p){ if (p.length > biggest.length) biggest = p; });
+        if (biggest && biggest.length) {
+          var sx = 0, sy = 0;
+          biggest.forEach(function(p){ sx += p[0]; sy += p[1]; });
+          COUNTRY_CENTROIDS[iso] = [sx / biggest.length, sy / biggest.length];
+        }
+      });
+      WORLD_LOADED = true;
+      // Update country positions
+      COUNTRIES.forEach(function(c) {
+        var ctr = COUNTRY_CENTROIDS[c.id];
+        if (ctr) { c.x = ctr[0]; c.y = ctr[1]; }
+      });
+      drawMiniMap();
+      if (gameState) drawWorldMap();
     });
-    WORLD_LOADED = true;
-    // Update country positions from centroids
-    COUNTRIES.forEach(function(c) {
-      var ctr = COUNTRY_CENTROIDS[c.id];
-      if (ctr) { c.x = ctr[0]; c.y = ctr[1]; }
-    });
-    drawMiniMap();
-    if (gameState) drawWorldMap();
-  }).catch(function(err) {
-    console.error('Failed to load world map:', err);
-  });
 }
 loadWorldGeo();
 
@@ -220,25 +233,24 @@ loadWorldGeo();
 var miniCvs = document.getElementById('miniMap');
 var mctx = miniCvs.getContext('2d');
 
-function drawContinents(ctx, w, h, ownedColors) {
-  if (!WORLD_LOADED || !WORLD_GEO) {
-    // Loading state
+function drawMap(ctx, w, h, ownedColors) {
+  ctx.fillStyle = '#0a1428';
+  ctx.fillRect(0,0,w,h);
+  if (!WORLD_LOADED) {
     ctx.fillStyle = 'rgba(255,255,255,.3)';
     ctx.font = '12px Outfit';
     ctx.textAlign = 'center';
     ctx.fillText('Cargando mapa...', w/2, h/2);
     return;
   }
-
-  ctx.lineWidth = 0.8;
-
+  ctx.lineWidth = 0.6;
   for (var iso in WORLD_GEO) {
     var polys = WORLD_GEO[iso];
     var fill = '#1e2d4a';
-    var stroke = 'rgba(120,180,255,.35)';
+    var stroke = 'rgba(120,180,255,.3)';
     if (ownedColors && ownedColors[iso]) {
       fill = ownedColors[iso];
-      stroke = 'rgba(255,255,255,.5)';
+      stroke = 'rgba(255,255,255,.4)';
     }
     ctx.fillStyle = fill;
     ctx.strokeStyle = stroke;
@@ -258,52 +270,60 @@ function drawContinents(ctx, w, h, ownedColors) {
 
 function drawMiniMap() {
   var w = miniCvs.width, h = miniCvs.height;
-  // Ocean
-  mctx.fillStyle = '#0a1428';
-  mctx.fillRect(0,0,w,h);
-  // Continents
-  drawContinents(mctx, w, h);
-  // Countries
-  COUNTRIES.forEach(function(c) {
-    var x = (c.x / 1000) * w;
-    var y = (c.y / 500) * h;
-    var sel = c.id === selectedCountry;
-    mctx.beginPath();
-    mctx.arc(x, y, sel ? 5 : 3, 0, Math.PI*2);
-    mctx.fillStyle = sel ? '#A78BFA' : 'rgba(255,255,255,.5)';
-    mctx.fill();
-    if (sel) {
-      mctx.beginPath(); mctx.arc(x, y, 8, 0, Math.PI*2);
-      mctx.strokeStyle = '#A78BFA'; mctx.lineWidth = 2; mctx.stroke();
+  drawMap(mctx, w, h);
+  // Highlight selected country
+  if (selectedCountry && WORLD_GEO && WORLD_GEO[selectedCountry]) {
+    mctx.fillStyle = 'rgba(167,139,250,.45)';
+    mctx.strokeStyle = '#A78BFA';
+    mctx.lineWidth = 2;
+    WORLD_GEO[selectedCountry].forEach(function(ring) {
+      mctx.beginPath();
+      ring.forEach(function(pt, i) {
+        var x = (pt[0]/1000)*w;
+        var y = (pt[1]/500)*h;
+        if (i===0) mctx.moveTo(x,y); else mctx.lineTo(x,y);
+      });
+      mctx.closePath();
+      mctx.fill();
+      mctx.stroke();
+    });
+  }
+}
+
+// Find country at canvas pos using point-in-polygon
+function findCountryAt(cx, cy, w, h) {
+  if (!WORLD_LOADED) return null;
+  for (var iso in WORLD_GEO) {
+    var polys = WORLD_GEO[iso];
+    for (var i = 0; i < polys.length; i++) {
+      var ring = polys[i];
+      var inside = false;
+      for (var j = 0, k = ring.length - 1; j < ring.length; k = j++) {
+        var xi = (ring[j][0]/1000)*w, yi = (ring[j][1]/500)*h;
+        var xj = (ring[k][0]/1000)*w, yj = (ring[k][1]/500)*h;
+        if (((yi > cy) !== (yj > cy)) && (cx < (xj - xi) * (cy - yi) / (yj - yi) + xi)) inside = !inside;
+      }
+      if (inside) return iso;
     }
-  });
+  }
+  return null;
 }
 
 function autoJoin() {
   if (joined) return;
-  socket.emit('join', { name: document.getElementById('nameInput').value.trim() || 'Lider' });
+  socket.emit('join', { name: document.getElementById('ni').value.trim() || 'Lider' });
   joined = true;
-  document.getElementById('joinBtn').style.opacity = '0.5';
-  document.getElementById('joinBtn').textContent = 'UNIDO';
 }
 
 miniCvs.addEventListener('click', function(e) {
   var r = miniCvs.getBoundingClientRect();
   var cx = (e.clientX - r.left) / r.width * miniCvs.width;
   var cy = (e.clientY - r.top) / r.height * miniCvs.height;
-  // Find nearest country
-  var best = null, bestD = Infinity;
-  COUNTRIES.forEach(function(c) {
-    var x = (c.x / 1000) * miniCvs.width;
-    var y = (c.y / 500) * miniCvs.height;
-    var dx = x - cx, dy = y - cy;
-    var d = dx*dx + dy*dy;
-    if (d < bestD) { bestD = d; best = c; }
-  });
-  if (best && bestD < 400) {
-    autoJoin(); // auto-join if not joined
-    selectedCountry = best.id;
-    setTimeout(function(){ socket.emit('selectCountry', { country: best.id }); }, 100);
+  var iso = findCountryAt(cx, cy, miniCvs.width, miniCvs.height);
+  if (iso && COUNTRIES.find(function(c){return c.id===iso;})) {
+    autoJoin();
+    selectedCountry = iso;
+    setTimeout(function(){ socket.emit('selectCountry', { country: iso }); }, 100);
     updateSelDisplay();
     drawMiniMap();
   }
@@ -312,28 +332,16 @@ miniCvs.addEventListener('click', function(e) {
 function updateSelDisplay() {
   var c = COUNTRIES.find(function(x) { return x.id === selectedCountry; });
   if (c) {
-    document.getElementById('selFlag').textContent = c.flag;
-    document.getElementById('selName').textContent = c.name;
-    document.getElementById('selStats').textContent = c.id + ' · ' + c.region;
+    var alias = ALIASES[c.id];
+    document.getElementById('selFlag').textContent = (alias && alias.flag) || c.flag;
+    document.getElementById('selName').textContent = (alias && alias.name) || c.name;
   } else {
     document.getElementById('selFlag').textContent = '🌍';
     document.getElementById('selName').textContent = 'Sin pais';
-    document.getElementById('selStats').textContent = '';
   }
 }
 
-// ── Lobby UI ──
-document.getElementById('joinBtn').onclick = function() {
-  if (joined) return;
-  socket.emit('join', { name: document.getElementById('nameInput').value.trim() || 'Lider' });
-  joined = true;
-  this.style.opacity = '0.4';
-  this.textContent = 'UNIDO';
-};
-
-document.getElementById('startBtn').onclick = function() {
-  socket.emit('start');
-};
+document.getElementById('startBtn').onclick = function() { socket.emit('start'); };
 
 document.querySelectorAll('#difficultyRow .opt').forEach(function(b) {
   b.onclick = function() {
@@ -367,10 +375,25 @@ function buildScenarios() {
 socket.on('lobby', function(data) {
   COUNTRIES = data.countries;
   SCENARIOS_LIST = data.scenarios || [];
+  ALIASES = data.aliases || {};
   if (SCENARIOS_LIST.length && document.getElementById('scenarioRow').children.length === 0) {
     buildScenarios();
   }
-  // Players display
+  // Update aliases when scenario changes
+  if (data.scenario !== selScenario) {
+    selScenario = data.scenario;
+    document.querySelectorAll('#scenarioRow .opt').forEach(function(b) {
+      if (b.textContent.indexOf(SCENARIOS_LIST.find(function(s){return s.id===selScenario;}).name) !== -1) b.classList.add('sel');
+      else b.classList.remove('sel');
+    });
+  }
+  // Refresh centroids on countries
+  if (WORLD_LOADED) {
+    COUNTRIES.forEach(function(c) {
+      var ctr = COUNTRY_CENTROIDS[c.id];
+      if (ctr) { c.x = ctr[0]; c.y = ctr[1]; }
+    });
+  }
   var lp = document.getElementById('lobbyPlayers');
   lp.innerHTML = '';
   data.players.forEach(function(p) {
@@ -381,26 +404,24 @@ socket.on('lobby', function(data) {
     lp.appendChild(el);
   });
   drawMiniMap();
+  updateSelDisplay();
 });
 
-socket.on('error', function(d) {
-  alert(d.msg || 'Error');
-});
+socket.on('error', function(d) { alert(d.msg || 'Error'); });
 
-socket.on('gameStart', function(d) {
-  document.getElementById('lobby').classList.add('hidden');
-  document.getElementById('game').classList.add('show');
+socket.on('gameStart', function() {
+  document.getElementById('lobby').classList.add('h');
+  document.getElementById('game').classList.add('s');
   resizeMap();
 });
 
 socket.on('state', function(s) {
   gameState = s;
+  ALIASES = s.aliases || {};
   document.getElementById('turnLabel').textContent = 'Año ' + s.turn + '/' + s.maxTurns;
-  var m = Math.floor(s.timeLeft/60), sec = s.timeLeft % 60;
-  document.getElementById('timeLabel').textContent = m + ':' + (sec<10?'0':'') + sec;
-  // Find my country from players
+  // Find my country
   for (var sid in s.players) {
-    if (s.players[sid].name === (document.getElementById('nameInput').value.trim() || 'Lider')) {
+    if (s.players[sid].name === (document.getElementById('ni').value.trim() || 'Romano')) {
       myCountry = s.players[sid].country;
       break;
     }
@@ -409,40 +430,45 @@ socket.on('state', function(s) {
   if (inspectCountry) updatePanel(inspectCountry);
 });
 
-socket.on('chat', function(d) {
-  var el = document.getElementById('chatMsgs');
+socket.on('log', function(d) {
+  var el = document.getElementById('log');
   var div = document.createElement('div');
-  div.className = 'cmsg';
-  div.innerHTML = '<span class="n" style="color:'+d.color+'">'+esc(d.name)+':</span>'+esc(d.msg);
+  div.className = 'lmsg' + (d.msg.indexOf('Sistema')===0?' sys':'');
+  div.textContent = '[T'+d.turn+'] ' + d.msg;
   el.appendChild(div);
   el.scrollTop = el.scrollHeight;
 });
 
-socket.on('log', function(d) {
-  var el = document.getElementById('chatMsgs');
+socket.on('chat', function(d) {
+  var el = document.getElementById('log');
   var div = document.createElement('div');
-  div.className = 'csys';
-  div.textContent = '[T'+d.turn+'] ' + d.msg;
+  div.className = 'lmsg sys';
+  div.innerHTML = '<span style="color:'+d.color+'">'+esc(d.name)+':</span> '+esc(d.msg);
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+});
+
+socket.on('countryReply', function(d) {
+  if (d.country !== inspectCountry) return;
+  var el = document.getElementById('ccMsgs');
+  var div = document.createElement('div');
+  div.className = 'ccm ai';
+  div.innerHTML = '<b>'+esc(d.from)+':</b> '+esc(d.text);
   el.appendChild(div);
   el.scrollTop = el.scrollHeight;
 });
 
 socket.on('gameEnd', function(d) {
   var ol = document.getElementById('overlay');
-  ol.classList.add('show');
-  document.getElementById('olT').textContent = 'GANADOR: ' + (d.winner ? d.winner.country : '?');
+  ol.classList.add('s');
+  document.getElementById('olT').textContent = 'GANADOR: ' + (d.winner ? d.winner.displayName : '?');
   document.getElementById('olT').style.color = '#FBBF24';
-  document.getElementById('olM').innerHTML = 'Top 5:<br>' + d.scores.slice(0,5).map(function(s,i){return (i+1)+'. '+s.country+' ('+s.score+' pts)';}).join('<br>');
+  document.getElementById('olM').innerHTML = 'Top 5:<br>' + d.scores.slice(0,5).map(function(s,i){return (i+1)+'. '+s.displayName+' ('+s.score+' pts)';}).join('<br>');
 });
 
-// Tick UI for time countdown
-setInterval(function() {
-  if (gameState && gameState.timeLeft > 0) {
-    gameState.timeLeft--;
-    var m = Math.floor(gameState.timeLeft/60), sec = gameState.timeLeft % 60;
-    document.getElementById('timeLabel').textContent = m + ':' + (sec<10?'0':'') + sec;
-  }
-}, 1000);
+document.getElementById('nextTurnBtn').onclick = function() {
+  socket.emit('nextTurn');
+};
 
 // ── World Map (game) ──
 var wmCvs = document.getElementById('worldMap');
@@ -462,104 +488,80 @@ function drawWorldMap() {
   if (!gameState) return;
   var w = wmCvs.width / dpr, h = wmCvs.height / dpr;
   wmCtx.setTransform(dpr,0,0,dpr,0,0);
-  wmCtx.fillStyle = '#0a1428';
-  wmCtx.fillRect(0,0,w,h);
 
-  // Build owned colors map
+  // Build owned colors
   var ownedColors = {};
   for (var cid in gameState.countries) {
     var data = gameState.countries[cid];
     if (data.owner && gameState.players[data.owner]) {
-      ownedColors[cid] = gameState.players[data.owner].color + 'aa';
-    }
-    if (data.war && data.war.length > 0) {
-      // Tinted red for at-war countries
-      if (!ownedColors[cid]) ownedColors[cid] = '#5a2530';
+      ownedColors[cid] = gameState.players[data.owner].color + 'cc';
+    } else if (data.controlledBy) {
+      // Colonial control - tinted blue
+      ownedColors[cid] = '#3b5a8a99';
     }
   }
+  // Highlight selected
+  if (inspectCountry) ownedColors[inspectCountry] = '#A78BFAcc';
 
-  // Real country polygons
-  drawContinents(wmCtx, w, h, ownedColors);
+  drawMap(wmCtx, w, h, ownedColors);
 
-  // Country markers (dots) on top
-  COUNTRIES.forEach(function(c) {
-    var x = (c.x / 1000) * w;
-    var y = (c.y / 500) * h;
-    var data = gameState.countries[c.id];
-    if (!data) return;
-    var size = 4 + Math.min(8, data.army / 60);
-    var color = '#888';
-    if (data.owner) {
-      var p = gameState.players[data.owner];
-      if (p) color = p.color;
-    }
-    wmCtx.beginPath();
-    wmCtx.arc(x, y, size, 0, Math.PI*2);
-    wmCtx.fillStyle = color;
-    wmCtx.fill();
-    wmCtx.strokeStyle = 'rgba(0,0,0,.4)';
-    wmCtx.lineWidth = 1;
-    wmCtx.stroke();
-    // Selected
-    if (c.id === inspectCountry) {
-      wmCtx.beginPath();
-      wmCtx.arc(x, y, size + 4, 0, Math.PI*2);
-      wmCtx.strokeStyle = '#A78BFA';
-      wmCtx.lineWidth = 2;
-      wmCtx.stroke();
-    }
-    // Label (small)
-    if (size > 7 || c.id === inspectCountry) {
-      wmCtx.font = '700 9px Outfit';
-      wmCtx.textAlign = 'center';
-      wmCtx.fillStyle = 'rgba(255,255,255,.7)';
-      wmCtx.fillText(c.id, x, y + size + 10);
-    }
-  });
-
-  // Player flag indicator on my country
-  if (myCountry) {
-    var mc = COUNTRIES.find(function(x){return x.id===myCountry;});
-    if (mc) {
-      var mx = (mc.x / 1000) * w;
-      var my = (mc.y / 500) * h;
-      wmCtx.font = '14px serif';
-      wmCtx.textAlign = 'center';
-      wmCtx.fillText(mc.flag, mx, my - 12);
-    }
+  // Draw small army indicators (small numbers near each country)
+  if (WORLD_LOADED) {
+    COUNTRIES.forEach(function(c) {
+      var data = gameState.countries[c.id];
+      if (!data || !data.army) return;
+      var ctr = COUNTRY_CENTROIDS[c.id];
+      if (!ctr) return;
+      var x = (ctr[0]/1000)*w;
+      var y = (ctr[1]/500)*h;
+      // Only show if army > 100 or selected
+      if (data.army > 100 || c.id === inspectCountry) {
+        wmCtx.font = '700 9px Outfit';
+        wmCtx.textAlign = 'center';
+        wmCtx.fillStyle = 'rgba(255,255,255,.85)';
+        wmCtx.strokeStyle = 'rgba(0,0,0,.6)';
+        wmCtx.lineWidth = 3;
+        wmCtx.strokeText(data.army, x, y);
+        wmCtx.fillText(data.army, x, y);
+      }
+    });
   }
 }
 
 wmCvs.addEventListener('click', function(e) {
-  if (!gameState) return;
+  if (!gameState || !WORLD_LOADED) return;
   var r = wmCvs.getBoundingClientRect();
   var cx = (e.clientX - r.left);
   var cy = (e.clientY - r.top);
-  var w = r.width, h = r.height;
-  var best = null, bestD = Infinity;
-  COUNTRIES.forEach(function(c) {
-    var x = (c.x / 1000) * w;
-    var y = (c.y / 500) * h;
-    var dx = x - cx, dy = y - cy;
-    var d = dx*dx + dy*dy;
-    if (d < bestD) { bestD = d; best = c; }
-  });
-  if (best && bestD < 900) {
-    inspectCountry = best.id;
-    updatePanel(best.id);
+  var iso = findCountryAt(cx, cy, r.width, r.height);
+  if (iso && gameState.countries[iso]) {
+    inspectCountry = iso;
+    document.getElementById('panel').classList.add('show');
+    updatePanel(iso);
     drawWorldMap();
   }
 });
+
+window.closePanel = function() {
+  inspectCountry = null;
+  document.getElementById('panel').classList.remove('show');
+  drawWorldMap();
+};
 
 function updatePanel(cid) {
   var c = COUNTRIES.find(function(x){return x.id===cid;});
   if (!c || !gameState) return;
   var data = gameState.countries[cid];
-  document.getElementById('panelFlag').textContent = c.flag;
-  document.getElementById('panelName').textContent = c.name;
-  var ownerName = '-';
+  var alias = (gameState.aliases || {})[cid];
+  document.getElementById('panelFlag').textContent = (alias && alias.flag) || c.flag;
+  document.getElementById('panelName').textContent = data.displayName || c.name;
+
+  var ownerName = 'IA (Bot)';
   if (data.owner && gameState.players[data.owner]) ownerName = gameState.players[data.owner].name;
-  else if (!data.owner) ownerName = 'IA (Bot)';
+  if (data.controlledBy) {
+    var ctrlData = gameState.countries[data.controlledBy];
+    if (ctrlData) ownerName = 'Colonia de ' + ctrlData.displayName;
+  }
 
   var stats = document.getElementById('panelStats');
   stats.innerHTML =
@@ -567,48 +569,67 @@ function updatePanel(cid) {
     '<div class="stat"><span>Ejercito</span><span class="v">'+data.army+'</span></div>'+
     '<div class="stat"><span>Economia</span><span class="v">'+data.eco+'</span></div>'+
     '<div class="stat"><span>Tech</span><span class="v">'+data.tech+'</span></div>'+
-    '<div class="stat"><span>Territorios</span><span class="v">'+data.territories.length+'</span></div>'+
-    '<div class="stat"><span>Aliados</span><span class="v">'+(data.allies.length?data.allies.join(', '):'-')+'</span></div>'+
-    '<div class="stat"><span>Guerra con</span><span class="v" style="color:#F87171">'+(data.war.length?data.war.join(', '):'-')+'</span></div>';
+    '<div class="stat"><span>Aliados</span><span class="v" style="color:#4ADE80">'+(data.allies.length?data.allies.join(', '):'-')+'</span></div>'+
+    '<div class="stat"><span>En guerra</span><span class="v" style="color:#F87171">'+(data.war.length?data.war.join(', '):'-')+'</span></div>';
 
-  // Actions only if it's another country and I have a country
-  var acts = document.getElementById('panelActions');
+  // Action tab
+  var acts = document.getElementById('tabActions');
   acts.innerHTML = '';
   if (myCountry && cid !== myCountry) {
     var mineData = gameState.countries[myCountry];
     var atWar = mineData.war.indexOf(cid) !== -1;
     var allied = mineData.allies.indexOf(cid) !== -1;
     if (!atWar && !allied) {
-      var b1 = document.createElement('button'); b1.className='actbtn'; b1.textContent='⚔️ Declarar guerra';
-      b1.onclick=function(){socket.emit('action',{type:'declareWar',target:cid});};
-      acts.appendChild(b1);
-      var b2 = document.createElement('button'); b2.className='actbtn'; b2.textContent='🤝 Proponer alianza';
-      b2.onclick=function(){socket.emit('action',{type:'alliance',target:cid});};
-      acts.appendChild(b2);
+      addBtn(acts, '⚔️ Declarar guerra', function(){socket.emit('action',{type:'declareWar',target:cid});});
+      addBtn(acts, '🤝 Proponer alianza', function(){socket.emit('action',{type:'alliance',target:cid});});
+      addBtn(acts, '💰 Enviar 50 oro', function(){socket.emit('action',{type:'trade',target:cid,amount:50});});
     }
     if (atWar) {
-      var b3 = document.createElement('button'); b3.className='actbtn'; b3.textContent='🛡️ Invadir';
-      b3.onclick=function(){socket.emit('action',{type:'invade',target:cid});};
-      acts.appendChild(b3);
+      addBtn(acts, '🛡️ Invadir', function(){socket.emit('action',{type:'invade',target:cid});});
     }
   } else if (cid === myCountry) {
-    var b4 = document.createElement('button'); b4.className='actbtn'; b4.textContent='🏗️ Reclutar 50 tropas (-100 oro)';
-    b4.onclick=function(){socket.emit('action',{type:'build',amount:50});};
-    acts.appendChild(b4);
+    addBtn(acts, '🏗️ Reclutar 50 tropas (-100 oro)', function(){socket.emit('action',{type:'build',amount:50});});
+    addBtn(acts, '🏗️ Reclutar 100 tropas (-200 oro)', function(){socket.emit('action',{type:'build',amount:100});});
   }
 }
 
-function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-window.sendChat = function(e) {
+function addBtn(parent, txt, fn) {
+  var b = document.createElement('button');
+  b.className = 'actbtn';
+  b.textContent = txt;
+  b.onclick = fn;
+  parent.appendChild(b);
+}
+
+// Tabs
+document.querySelectorAll('.tab').forEach(function(t) {
+  t.onclick = function() {
+    document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('act');});
+    document.querySelectorAll('.tabContent').forEach(function(x){x.classList.remove('act');});
+    t.classList.add('act');
+    document.getElementById('tab'+t.getAttribute('data-t').charAt(0).toUpperCase()+t.getAttribute('data-t').slice(1)).classList.add('act');
+  };
+});
+
+window.sendCountryChat = function(e) {
   e.preventDefault();
-  var inp = document.getElementById('chatInput');
-  var m = inp.value.trim();
-  if (!m) return;
-  socket.emit('chat', { msg: m });
+  if (!inspectCountry) return;
+  var inp = document.getElementById('ccInput');
+  var msg = inp.value.trim();
+  if (!msg) return;
+  // Append user msg locally
+  var el = document.getElementById('ccMsgs');
+  var div = document.createElement('div');
+  div.className = 'ccm user';
+  div.innerHTML = '<b>Vos:</b> '+esc(msg);
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+  socket.emit('countryChat', { country: inspectCountry, msg: msg });
   inp.value = '';
 };
 
-// Init
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
 setTimeout(function(){ resizeMap(); drawMiniMap(); }, 100);
 
 })();

@@ -94,6 +94,20 @@ module.exports = {
     { id: 'NZL', name: 'Nueva Zelanda',    flag: '🇳🇿', x: 800, y: 370, region: 'OC' },
   ],
 
+  // Country aliases for 1936 (display name and merged territories)
+  // In 1936: Russia=USSR (controls KAZ,UKR,BLR), India=British Raj (controls PAK,BGD), etc.
+  aliases1936: {
+    RUS: { name: 'URSS', flag: '☭', controls: ['KAZ','UKR'] },
+    DEU: { name: 'Tercer Reich', flag: '🇩🇪', controls: ['AUT'] },
+    GBR: { name: 'Imperio Britanico', flag: '🇬🇧', controls: ['IND','EGY','AUS','CAN','NZL'] },
+    FRA: { name: 'Imperio Frances', flag: '🇫🇷', controls: ['VNM','DZA','MAR','TUN'] },
+    ITA: { name: 'Italia Fascista', flag: '🇮🇹', controls: ['ETH','LBY'] },
+    JPN: { name: 'Imperio Japones', flag: '🇯🇵', controls: ['KOR','TWN'] },
+    USA: { name: 'Estados Unidos', flag: '🇺🇸', controls: ['PHL'] },
+    ESP: { name: 'Espana (Guerra Civil)', flag: '🇪🇸', controls: [] },
+    CHN: { name: 'China (Republica)', flag: '🇨🇳', controls: ['MNG'] },
+  },
+
   // Approximate neighbor relationships (used for movement/invasion)
   neighbors: {
     USA: ['CAN','MEX','CUB'],
