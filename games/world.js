@@ -92,6 +92,7 @@ function broadcastLobby() {
     difficulty: state.difficulty,
     countries: WORLD.countries,
     aliases: state.scenario === '1936' ? WORLD.aliases1936 : {},
+    featured: (WORLD.featured && WORLD.featured[state.scenario]) || [],
     scenarios: Object.keys(SCENARIOS.scenarios).map(function(k) {
       return { id: k, name: SCENARIOS.scenarios[k].name, desc: SCENARIOS.scenarios[k].desc };
     })

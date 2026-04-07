@@ -94,6 +94,12 @@ module.exports = {
     { id: 'NZL', name: 'Nueva Zelanda',    flag: '🇳🇿', x: 800, y: 370, region: 'OC' },
   ],
 
+  // Featured top 4 countries per scenario (shown prominently in lobby)
+  featured: {
+    '1936': ['DEU','USA','RUS','GBR'],
+    '2026': ['USA','CHN','RUS','IND'],
+  },
+
   // Country aliases for 1936 (display name and merged territories)
   // In 1936: Russia=USSR (controls KAZ,UKR,BLR), India=British Raj (controls PAK,BGD), etc.
   aliases1936: {
