@@ -149,26 +149,24 @@
       </div>
       <div id="panelStats"></div>
       <div class="tabs">
-        <div class="tab act" data-t="actions">Acciones</div>
-        <div class="tab" data-t="chat">Diplomacia IA</div>
-        <div class="tab" id="tabCmdBtn" data-t="cmd" style="display:none">Comandos IA</div>
+        <div class="tab act" id="tabDiplBtn" data-t="chat">Diplomacia</div>
+        <div class="tab" id="tabCmdBtn" data-t="cmd" style="display:none">Mis Ordenes</div>
       </div>
-      <div class="tabContent act" id="tabActions"></div>
-      <div class="tabContent" id="tabChat">
+      <div class="tabContent act" id="tabChat">
         <div id="countryChat">
           <div id="ccMsgs"></div>
           <form id="ccForm" onsubmit="sendCountryChat(event)">
-            <input type="text" id="ccInput" placeholder="Mensaje al lider..." maxlength="200" autocomplete="off">
+            <input type="text" id="ccInput" placeholder="Habla con el lider..." maxlength="200" autocomplete="off">
             <button type="submit" id="ccSend">Enviar</button>
           </form>
         </div>
       </div>
       <div class="tabContent" id="tabCmd">
-        <div id="cmdChat" style="display:flex;flex-direction:column;flex:1;min-height:140px;max-height:240px">
+        <div id="cmdChat" style="display:flex;flex-direction:column;flex:1;min-height:140px;max-height:280px">
           <div id="cmdMsgs" style="flex:1;overflow-y:auto;background:rgba(0,0,0,.3);border-radius:8px;padding:6px;margin-bottom:6px;font-size:11px;line-height:1.4"></div>
           <form id="cmdForm" onsubmit="sendCommand(event)">
             <div style="display:flex;gap:4px">
-              <input type="text" id="cmdInput" placeholder="Ej: construir 3 fabricas" maxlength="200" autocomplete="off" style="flex:1;padding:7px 10px;font-size:11px;border:1px solid rgba(167,139,250,.2);border-radius:7px;background:rgba(167,139,250,.05);color:#fff;outline:none;font-family:Outfit,sans-serif">
+              <input type="text" id="cmdInput" placeholder="Da una orden a tu pais..." maxlength="300" autocomplete="off" style="flex:1;padding:7px 10px;font-size:11px;border:1px solid rgba(167,139,250,.2);border-radius:7px;background:rgba(167,139,250,.05);color:#fff;outline:none;font-family:Outfit,sans-serif">
               <button type="submit" style="padding:7px 12px;font-size:10px;font-weight:700;border:none;border-radius:7px;background:rgba(167,139,250,.25);color:#A78BFA;cursor:pointer;font-family:Space Grotesk,sans-serif">EJECUTAR</button>
             </div>
           </form>
@@ -606,53 +604,54 @@ function updatePanel(cid) {
     if (ctrlData) ownerName = 'Colonia de ' + ctrlData.displayName;
   }
 
+  var isMine = cid === myCountry;
   var stats = document.getElementById('panelStats');
-  stats.innerHTML =
-    '<div class="stat"><span>Lider</span><span class="v">'+ownerName+'</span></div>'+
-    '<div class="stat"><span>💰 Oro</span><span class="v">'+data.eco+' (+'+(data.ecoIncome||0)+'/año)</span></div>'+
-    '<div class="stat"><span>⚔️ Ejercito</span><span class="v">'+data.army+'</span></div>'+
-    '<div class="stat"><span>⚓ Marina</span><span class="v">'+(data.navy||0)+'</span></div>'+
-    '<div class="stat"><span>🏭 Industria</span><span class="v">'+(data.industry||0)+'</span></div>'+
-    '<div class="stat"><span>🛡️ Defensa</span><span class="v">'+(data.defense||0)+'</span></div>'+
-    '<div class="stat"><span>🔬 Tec</span><span class="v">'+data.tech+'/10</span></div>'+
-    '<div class="stat"><span>📊 Moral</span><span class="v">'+(data.morale||0)+'/100</span></div>'+
-    '<div class="stat"><span>🤝 Aliados</span><span class="v" style="color:#4ADE80">'+(data.allies.length?data.allies.join(', '):'-')+'</span></div>'+
-    '<div class="stat"><span>⚡ Guerra</span><span class="v" style="color:#F87171">'+(data.war.length?data.war.join(', '):'-')+'</span></div>';
 
-  // Action tab - quick diplomatic actions only
-  var acts = document.getElementById('tabActions');
-  acts.innerHTML = '';
-  if (myCountry && cid !== myCountry) {
-    var mineData = gameState.countries[myCountry];
-    var atWar = mineData.war.indexOf(cid) !== -1;
-    var allied = mineData.allies.indexOf(cid) !== -1;
-    if (!atWar && !allied) {
-      addBtn(acts, '⚔️ Declarar guerra', function(){socket.emit('action',{type:'declareWar',target:cid});});
-      addBtn(acts, '🤝 Proponer alianza', function(){socket.emit('action',{type:'alliance',target:cid});});
-      addBtn(acts, '💰 Enviar 50 oro', function(){socket.emit('action',{type:'trade',target:cid,amount:50});});
-    }
-    if (atWar) {
-      addBtn(acts, '🛡️ Invadir', function(){socket.emit('action',{type:'invade',target:cid});});
-    }
-    if (acts.innerHTML === '') {
-      acts.innerHTML = '<div style="color:rgba(255,255,255,.3);font-size:11px;text-align:center;padding:10px">Ya estan vinculados.<br>Usa el chat IA.</div>';
-    }
-  } else if (cid === myCountry) {
-    acts.innerHTML = '<div style="color:rgba(255,255,255,.45);font-size:11px;padding:8px;line-height:1.6">Usa la pestaña <b style="color:#A78BFA">Comandos IA</b> para dar ordenes a tu pais en lenguaje natural.<br><br>Ejemplos:<br>• "construir 3 fabricas"<br>• "reclutar 200 tropas"<br>• "comprar 10 barcos"<br>• "fortificar fronteras"<br>• "investigar tecnologia"<br>• "campaña de propaganda"</div>';
+  if (isMine) {
+    // Full info - your own country
+    stats.innerHTML =
+      '<div class="stat"><span>Lider</span><span class="v" style="color:#4ADE80">VOS</span></div>'+
+      '<div class="stat"><span>💰 Oro</span><span class="v">'+data.eco+' (+'+(data.ecoIncome||0)+'/año)</span></div>'+
+      '<div class="stat"><span>⚔️ Ejercito</span><span class="v">'+data.army+'</span></div>'+
+      '<div class="stat"><span>⚓ Marina</span><span class="v">'+(data.navy||0)+'</span></div>'+
+      '<div class="stat"><span>🏭 Industria</span><span class="v">'+(data.industry||0)+'</span></div>'+
+      '<div class="stat"><span>🛡️ Defensa</span><span class="v">'+(data.defense||0)+'</span></div>'+
+      '<div class="stat"><span>🔬 Tec</span><span class="v">'+data.tech+'/10</span></div>'+
+      '<div class="stat"><span>📊 Moral</span><span class="v">'+(data.morale||0)+'/100</span></div>'+
+      '<div class="stat"><span>🤝 Aliados</span><span class="v" style="color:#4ADE80">'+(data.allies.length?data.allies.join(', '):'-')+'</span></div>'+
+      '<div class="stat"><span>⚡ Guerra</span><span class="v" style="color:#F87171">'+(data.war.length?data.war.join(', '):'-')+'</span></div>';
+  } else {
+    // Hidden info - other countries
+    stats.innerHTML =
+      '<div class="stat"><span>Lider</span><span class="v">'+ownerName+'</span></div>'+
+      '<div class="stat"><span>⚔️ Ejercito</span><span class="v" style="color:#FBBF24">'+(data.armyApprox||'?')+'</span></div>'+
+      '<div class="stat"><span>🔬 Tec aprox</span><span class="v">'+(data.techApprox||'?')+'/10</span></div>'+
+      '<div class="stat"><span>🤝 Aliados</span><span class="v" style="color:#4ADE80">'+(data.allies.length?data.allies.join(', '):'-')+'</span></div>'+
+      '<div class="stat"><span>⚡ Guerra con</span><span class="v" style="color:#F87171">'+(data.war.length?data.war.join(', '):'-')+'</span></div>'+
+      '<div style="color:rgba(255,255,255,.25);font-size:9px;text-align:center;padding:4px">Detalles ocultos. Usa diplomacia para saber mas.</div>';
   }
 
-  // Show/hide commands tab
+  // Show/hide commands tab and switch tabs
   var cmdTab = document.getElementById('tabCmdBtn');
-  if (cid === myCountry) {
+  var diplTab = document.getElementById('tabDiplBtn');
+  if (isMine) {
     cmdTab.style.display = '';
+    diplTab.style.display = 'none';
+    // Auto switch to commands if on diplomacy
+    if (document.getElementById('tabChat').classList.contains('act')) {
+      document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('act');});
+      document.querySelectorAll('.tabContent').forEach(function(x){x.classList.remove('act');});
+      cmdTab.classList.add('act');
+      document.getElementById('tabCmd').classList.add('act');
+    }
   } else {
     cmdTab.style.display = 'none';
-    // If currently on cmd tab, switch to actions
+    diplTab.style.display = '';
     if (document.getElementById('tabCmd').classList.contains('act')) {
       document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('act');});
       document.querySelectorAll('.tabContent').forEach(function(x){x.classList.remove('act');});
-      document.querySelector('.tab[data-t="actions"]').classList.add('act');
-      document.getElementById('tabActions').classList.add('act');
+      diplTab.classList.add('act');
+      document.getElementById('tabChat').classList.add('act');
     }
   }
 }

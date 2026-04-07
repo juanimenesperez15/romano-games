@@ -99,32 +99,62 @@ function broadcastLobby() {
 }
 
 function broadcastGameState() {
-  var snap = {
-    turn: state.turn,
-    maxTurns: MAX_TURNS,
-    scenario: state.scenario,
-    countries: {},
-    players: {},
-    aliases: state.scenario === '1936' ? WORLD.aliases1936 : {},
-  };
-  for (var cid in state.countries) {
-    var c = state.countries[cid];
-    snap.countries[cid] = {
-      displayName: c.displayName,
-      army: c.army, navy: c.navy, eco: c.eco, ecoIncome: c.ecoIncome,
-      tech: c.tech, industry: c.industry, defense: c.defense, morale: c.morale,
-      owner: c.owner,
-      controlledBy: c.controlledBy,
-      allies: c.allies, war: c.war,
-      territories: c.territories,
-      pers: c.pers,
-    };
-  }
+  var basePlayers = {};
   for (var sid in state.players) {
     var p = state.players[sid];
-    snap.players[sid] = { name: p.name, color: p.color, country: p.country };
+    basePlayers[sid] = { name: p.name, color: p.color, country: p.country };
   }
-  io.emit('state', snap);
+
+  // Send personalized state per player (own stats full, others hidden)
+  for (var psid in state.players) {
+    var myPlayer = state.players[psid];
+    var snap = {
+      turn: state.turn,
+      maxTurns: MAX_TURNS,
+      scenario: state.scenario,
+      countries: {},
+      players: basePlayers,
+      aliases: state.scenario === '1936' ? WORLD.aliases1936 : {},
+      myCountry: myPlayer.country,
+    };
+    for (var cid in state.countries) {
+      var c = state.countries[cid];
+      var isMine = (c.owner === psid);
+      snap.countries[cid] = {
+        displayName: c.displayName,
+        owner: c.owner,
+        controlledBy: c.controlledBy,
+        allies: c.allies,
+        war: c.war,
+        territories: c.territories,
+      };
+      if (isMine) {
+        // Full info for owned country
+        snap.countries[cid].army = c.army;
+        snap.countries[cid].navy = c.navy;
+        snap.countries[cid].eco = c.eco;
+        snap.countries[cid].ecoIncome = c.ecoIncome;
+        snap.countries[cid].tech = c.tech;
+        snap.countries[cid].industry = c.industry;
+        snap.countries[cid].defense = c.defense;
+        snap.countries[cid].morale = c.morale;
+        snap.countries[cid].pers = c.pers;
+      } else {
+        // Hidden - only relative strength approximations
+        snap.countries[cid].armyApprox = approxStat(c.army);
+        snap.countries[cid].techApprox = c.tech;
+      }
+    }
+    io.to(psid).emit('state', snap);
+  }
+}
+
+function approxStat(val) {
+  if (val < 50) return 'muy debil';
+  if (val < 150) return 'debil';
+  if (val < 300) return 'moderado';
+  if (val < 500) return 'fuerte';
+  return 'muy fuerte';
 }
 
 function startGame() {
@@ -325,7 +355,7 @@ function getCountryChat(sid, countryId, userMsg, callback) {
   }
 }
 
-// ── AI Command System: player issues free-text orders to their own country ──
+// ── Global AI Command System: player gives free-text orders, AI handles everything ──
 function commandCountry(sid, command, callback) {
   var p = state.players[sid];
   if (!p || !p.country) return callback({ ok: false, msg: 'No estas en juego' });
@@ -333,125 +363,200 @@ function commandCountry(sid, command, callback) {
   if (!mine) return callback({ ok: false, msg: 'Pais no encontrado' });
 
   if (anthropic) {
-    var sysPrompt = 'Sos el asesor estrategico del lider de ' + mine.displayName + ' en el escenario ' + (state.scenario === '1936' ? '1936 (visperas WWII)' : '2026 (tension moderna)') + '. ' +
-      'El jugador da una orden en lenguaje natural. Tu trabajo es interpretarla y devolver un JSON con los efectos. ' +
-      'Estado actual del pais:\n' +
+    // Build global context
+    var nearbyCountries = [];
+    var neighbors = WORLD.neighbors[p.country] || [];
+    neighbors.forEach(function(nid) {
+      var n = state.countries[nid];
+      if (n) nearbyCountries.push(n.displayName + ' (' + nid + ', ' + approxStat(n.army) + ')');
+    });
+
+    var allCountriesBrief = [];
+    for (var cid in state.countries) {
+      if (cid === p.country) continue;
+      var c = state.countries[cid];
+      if (c.owner || c.army > 200 || mine.allies.indexOf(cid) !== -1 || mine.war.indexOf(cid) !== -1) {
+        allCountriesBrief.push(c.displayName + ' (' + cid + ')');
+      }
+    }
+
+    var sysPrompt = 'Sos el asesor estrategico supremo de ' + mine.displayName + ' en ' + (state.scenario === '1936' ? '1936 (visperas WWII)' : '2026 (tension moderna)') + ', año ' + state.turn + ' del juego.\n\n' +
+      'TU PAIS:\n' +
+      '- ID: ' + p.country + '\n' +
       '- Oro: ' + mine.eco + ' (ingreso: ' + mine.ecoIncome + '/año)\n' +
-      '- Ejercito: ' + mine.army + '\n' +
-      '- Marina: ' + mine.navy + '\n' +
+      '- Ejercito: ' + mine.army + ' tropas\n' +
+      '- Marina: ' + mine.navy + ' barcos\n' +
       '- Tecnologia: ' + mine.tech + '/10\n' +
-      '- Industria: ' + mine.industry + '\n' +
-      '- Defensa: ' + mine.defense + '\n' +
+      '- Industria: ' + mine.industry + ' fabricas\n' +
+      '- Defensa fronteriza: ' + mine.defense + '\n' +
       '- Moral: ' + mine.morale + '/100\n' +
       '- Aliados: ' + (mine.allies.join(', ')||'ninguno') + '\n' +
       '- En guerra con: ' + (mine.war.join(', ')||'nadie') + '\n\n' +
-      'Reglas:\n' +
-      '- Construir 1 fabrica = 100 oro, +1 industria\n' +
-      '- Reclutar 100 tropas = 200 oro, +100 ejercito\n' +
-      '- Construir 10 barcos = 300 oro, +10 marina\n' +
-      '- Fortificar fronteras = 150 oro, +20 defensa\n' +
-      '- Investigar tecnologia = 500 oro, +1 tech (max 10)\n' +
-      '- Propaganda = 50 oro, +10 moral\n' +
-      '- Otras acciones tienen costos proporcionales\n\n' +
-      'IMPORTANTE: Devolve SOLO JSON valido (sin markdown, sin texto extra) con este formato:\n' +
-      '{"valid": true, "cost": {"eco": 100}, "effect": {"industry": 1}, "narrative": "descripcion breve en español"}\n' +
-      'Si la orden no es valida o no tiene oro suficiente:\n' +
-      '{"valid": false, "reason": "explicacion en español"}\n' +
-      'Effect puede tener: army, navy, eco, ecoIncome, tech, industry, defense, morale (positivos o negativos).';
+      'PAISES VECINOS: ' + (nearbyCountries.join(', ') || 'ninguno') + '\n' +
+      'POTENCIAS RELEVANTES: ' + allCountriesBrief.slice(0,15).join(', ') + '\n\n' +
+      'El jugador da una orden en lenguaje natural. Vos interpretas, evaluas consecuencias geopoliticas realistas, y devolves JSON con los efectos.\n\n' +
+      'TIPOS DE ACCIONES POSIBLES (entre otras):\n' +
+      '• Construccion: fabricas (100 oro c/u, +1 industria), puertos, aeropuertos, universidades\n' +
+      '• Militar: reclutar tropas (2 oro c/u), construir barcos (30 oro c/u), fortificar (150 oro, +20 defensa)\n' +
+      '• Tecnologia: investigacion (500 oro, +1 tech)\n' +
+      '• Sociedad: propaganda (+10 moral, 50 oro), reformas, censura\n' +
+      '• Diplomacia: declarar guerra, proponer alianza, romper tratado, expulsar embajador\n' +
+      '• Comercio: enviar oro a otro pais, embargo, sanciones\n' +
+      '• Militar ofensivo: invadir vecino (gasta tropas, puede tomar territorio si gana)\n' +
+      '• Espionaje: sabotaje, robar tecnologia\n' +
+      '• Cualquier otra accion creativa\n\n' +
+      'CONSECUENCIAS A CONSIDERAR:\n' +
+      '- Declarar guerra baja relacion al maximo, puede activar alianzas enemigas\n' +
+      '- Atacar sin razon baja tu moral y la opinion mundial\n' +
+      '- Comerciar mejora relaciones\n' +
+      '- Invadir solo funciona si sos vecino y tenes ejercito suficiente\n' +
+      '- En combate: comparas tu ejercito+tech vs el suyo+defensa, hay random\n\n' +
+      'Devolve SOLO JSON valido (sin markdown, sin texto extra):\n' +
+      '{\n' +
+      '  "valid": true,\n' +
+      '  "selfChanges": {"eco": -200, "army": 100},\n' +
+      '  "targetCountry": "DEU",\n' +
+      '  "targetChanges": {"army": -50, "morale": -10},\n' +
+      '  "newWar": ["DEU"],\n' +
+      '  "newAlly": [],\n' +
+      '  "narrative": "descripcion breve dramatica en español"\n' +
+      '}\n' +
+      'Si invalido o no afford:\n' +
+      '{"valid": false, "reason": "explicacion breve"}\n' +
+      'Campos opcionales: targetCountry, targetChanges, newWar (array), newAlly (array), endWar (array).\n' +
+      'IMPORTANTE: usa SOLO los IDs ISO de paises (USA, DEU, FRA, etc).';
 
     anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 400,
+      max_tokens: 600,
       system: sysPrompt,
       messages: [{ role: 'user', content: command }]
     }).then(function(resp) {
       var text = resp.content[0].text || '{}';
-      // Extract JSON
       var match = text.match(/\{[\s\S]*\}/);
-      if (!match) return callback({ ok: false, msg: 'Respuesta invalida del asesor' });
+      if (!match) return callback({ ok: false, msg: 'Respuesta invalida' });
       try {
         var result = JSON.parse(match[0]);
-        applyAICommand(mine, result, callback);
+        applyGlobalCommand(p.country, mine, result, callback);
       } catch (e) {
-        callback({ ok: false, msg: 'Error parseando respuesta' });
+        callback({ ok: false, msg: 'Error parseando' });
       }
     }).catch(function(err) {
       console.error('Claude error:', err.message);
-      // Fallback to rule-based parser
       var fallback = parseCommandFallback(mine, command);
-      applyAICommand(mine, fallback, callback);
+      applyGlobalCommand(p.country, mine, fallback, callback);
     });
   } else {
     var fallback2 = parseCommandFallback(mine, command);
-    applyAICommand(mine, fallback2, callback);
+    applyGlobalCommand(p.country, mine, fallback2, callback);
   }
 }
 
-function applyAICommand(mine, result, callback) {
+function applyGlobalCommand(myCid, mine, result, callback) {
   if (!result.valid) {
     return callback({ ok: false, msg: result.reason || 'Orden invalida' });
   }
-  // Validate cost
-  if (result.cost) {
-    for (var k in result.cost) {
-      if ((mine[k] || 0) < result.cost[k]) {
-        return callback({ ok: false, msg: 'Recursos insuficientes: ' + k + ' (' + mine[k] + '/' + result.cost[k] + ')' });
+
+  // Apply self changes
+  if (result.selfChanges) {
+    // Validate negative cost
+    for (var k in result.selfChanges) {
+      var delta = result.selfChanges[k];
+      if (delta < 0 && (mine[k] || 0) + delta < 0) {
+        return callback({ ok: false, msg: 'Recursos insuficientes para ' + k });
       }
     }
-    // Apply cost
-    for (var k2 in result.cost) {
-      mine[k2] -= result.cost[k2];
+    for (var k2 in result.selfChanges) {
+      mine[k2] = (mine[k2] || 0) + result.selfChanges[k2];
+      clampStat(mine, k2);
     }
   }
-  // Apply effect
-  if (result.effect) {
-    for (var e in result.effect) {
-      mine[e] = (mine[e] || 0) + result.effect[e];
-      if (e === 'morale' && mine[e] > 100) mine[e] = 100;
-      if (e === 'tech' && mine[e] > 10) mine[e] = 10;
-      if (mine[e] < 0) mine[e] = 0;
+
+  // Apply target country changes
+  if (result.targetCountry && result.targetChanges && state.countries[result.targetCountry]) {
+    var t = state.countries[result.targetCountry];
+    for (var k3 in result.targetChanges) {
+      t[k3] = (t[k3] || 0) + result.targetChanges[k3];
+      clampStat(t, k3);
     }
   }
-  addLog(mine.displayName + ': ' + (result.narrative || 'orden ejecutada'));
-  callback({ ok: true, narrative: result.narrative || 'Orden ejecutada' });
+
+  // New wars
+  if (result.newWar && Array.isArray(result.newWar)) {
+    result.newWar.forEach(function(wid) {
+      var w = state.countries[wid];
+      if (!w || wid === myCid) return;
+      if (mine.war.indexOf(wid) === -1) mine.war.push(wid);
+      if (w.war.indexOf(myCid) === -1) w.war.push(myCid);
+      mine.allies = mine.allies.filter(function(x){return x!==wid;});
+      w.allies = w.allies.filter(function(x){return x!==myCid;});
+    });
+  }
+
+  // New allies
+  if (result.newAlly && Array.isArray(result.newAlly)) {
+    result.newAlly.forEach(function(aid) {
+      var a = state.countries[aid];
+      if (!a || aid === myCid) return;
+      if (mine.allies.indexOf(aid) === -1) mine.allies.push(aid);
+      if (a.allies.indexOf(myCid) === -1) a.allies.push(myCid);
+    });
+  }
+
+  // End wars
+  if (result.endWar && Array.isArray(result.endWar)) {
+    result.endWar.forEach(function(wid) {
+      mine.war = mine.war.filter(function(x){return x!==wid;});
+      var w = state.countries[wid];
+      if (w) w.war = w.war.filter(function(x){return x!==myCid;});
+    });
+  }
+
+  addLog(mine.displayName + ': ' + (result.narrative || 'accion ejecutada'));
+  callback({ ok: true, narrative: result.narrative || 'Accion ejecutada' });
   broadcastGameState();
+}
+
+function clampStat(c, key) {
+  if (c[key] < 0) c[key] = 0;
+  if (key === 'morale' && c[key] > 100) c[key] = 100;
+  if (key === 'tech' && c[key] > 10) c[key] = 10;
 }
 
 function parseCommandFallback(mine, cmd) {
   var c = cmd.toLowerCase();
-  // Number extraction
   var numMatch = c.match(/(\d+)/);
   var n = numMatch ? parseInt(numMatch[1]) : 1;
 
   if (c.indexOf('fabrica') !== -1 || c.indexOf('industria') !== -1 || c.indexOf('planta') !== -1) {
     var cost = n * 100;
     if (mine.eco < cost) return { valid: false, reason: 'Necesitas ' + cost + ' oro' };
-    return { valid: true, cost: { eco: cost }, effect: { industry: n }, narrative: 'Construidas ' + n + ' fabricas' };
+    return { valid: true, selfChanges: { eco: -cost, industry: n }, narrative: 'Construidas ' + n + ' fabricas' };
   }
-  if (c.indexOf('tropa') !== -1 || c.indexOf('ejercito') !== -1 || c.indexOf('soldado') !== -1 || c.indexOf('reclut') !== -1) {
+  if (c.indexOf('tropa') !== -1 || c.indexOf('soldado') !== -1 || c.indexOf('reclut') !== -1) {
     var cost2 = n * 2;
     if (mine.eco < cost2) return { valid: false, reason: 'Necesitas ' + cost2 + ' oro' };
-    return { valid: true, cost: { eco: cost2 }, effect: { army: n }, narrative: 'Reclutadas ' + n + ' tropas' };
+    return { valid: true, selfChanges: { eco: -cost2, army: n }, narrative: 'Reclutadas ' + n + ' tropas' };
   }
   if (c.indexOf('barco') !== -1 || c.indexOf('marina') !== -1 || c.indexOf('flota') !== -1 || c.indexOf('naval') !== -1) {
     var cost3 = n * 30;
     if (mine.eco < cost3) return { valid: false, reason: 'Necesitas ' + cost3 + ' oro' };
-    return { valid: true, cost: { eco: cost3 }, effect: { navy: n }, narrative: 'Construidos ' + n + ' barcos' };
+    return { valid: true, selfChanges: { eco: -cost3, navy: n }, narrative: 'Construidos ' + n + ' barcos' };
   }
   if (c.indexOf('fortific') !== -1 || c.indexOf('frontera') !== -1 || c.indexOf('defens') !== -1 || c.indexOf('muralla') !== -1) {
     if (mine.eco < 150) return { valid: false, reason: 'Necesitas 150 oro' };
-    return { valid: true, cost: { eco: 150 }, effect: { defense: 20 }, narrative: 'Fronteras fortificadas' };
+    return { valid: true, selfChanges: { eco: -150, defense: 20 }, narrative: 'Fronteras fortificadas' };
   }
   if (c.indexOf('tecnolog') !== -1 || c.indexOf('investig') !== -1 || c.indexOf('ciencia') !== -1) {
     if (mine.eco < 500) return { valid: false, reason: 'Necesitas 500 oro' };
-    if (mine.tech >= 10) return { valid: false, reason: 'Tecnologia ya al maximo' };
-    return { valid: true, cost: { eco: 500 }, effect: { tech: 1 }, narrative: 'Avance tecnologico logrado' };
+    if (mine.tech >= 10) return { valid: false, reason: 'Tecnologia al maximo' };
+    return { valid: true, selfChanges: { eco: -500, tech: 1 }, narrative: 'Avance tecnologico logrado' };
   }
-  if (c.indexOf('propag') !== -1 || c.indexOf('moral') !== -1 || c.indexOf('moral') !== -1) {
+  if (c.indexOf('propag') !== -1 || c.indexOf('moral') !== -1) {
     if (mine.eco < 50) return { valid: false, reason: 'Necesitas 50 oro' };
-    return { valid: true, cost: { eco: 50 }, effect: { morale: 10 }, narrative: 'Campaña de propaganda lanzada' };
+    return { valid: true, selfChanges: { eco: -50, morale: 10 }, narrative: 'Campaña de propaganda lanzada' };
   }
-  return { valid: false, reason: 'No entendi tu orden. Probá: construir fabrica, reclutar tropas, comprar barcos, fortificar fronteras, investigar tecnologia, propaganda' };
+  return { valid: false, reason: 'Sin Claude AI activa, solo soporto: fabricas, tropas, barcos, fortificar, tecnologia, propaganda. Activa ANTHROPIC_API_KEY en Railway para AI completa.' };
 }
 
 function ruleBasedReply(country, mine, msg, status) {
