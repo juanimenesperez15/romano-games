@@ -206,16 +206,20 @@ function tickWeek() {
   if (state.phase !== 'playing') return;
   var fraction = DAYS_PER_TICK / 365;
 
-  // Notify clients we are processing this tick (eliminates "stuck at 0" lag visual)
+  // Notify clients we are processing this tick — client opens summary modal
+  // immediately with a "Calculando semana..." state, so no perceived lag.
   io.emit('tickProcessing', { at: Date.now() });
 
-  // 1. Process queued player actions
   var queuedSummary = []; // for AI global summary
   var sids = Object.keys(state.queuedActions);
   var pendingProcessing = sids.length;
+  var processingDone = false;
 
   function finishTick() {
-    runBotsTurn();
+    if (processingDone) return; // safeguard against double-fire from timeout race
+    processingDone = true;
+
+    var botEvents = runBotsTurn(); // bots take visible actions, returns notable events
     resolveCombats();
 
     for (var cid in state.countries) {
@@ -234,29 +238,39 @@ function tickWeek() {
     }
 
     broadcastGameState();
-    // Generate summary then schedule next tick after pause
-    generateGlobalSummary(queuedSummary);
-    // Schedule next gameplay tick (10s summary display + 30s gameplay)
-    scheduleNextTick(SUMMARY_PAUSE_MS + TICK_INTERVAL_MS);
-    // Update nextTickAt to AFTER the summary pause for the timer display
-    state.nextTickAt = Date.now() + SUMMARY_PAUSE_MS + TICK_INTERVAL_MS;
-    state.summaryUntil = Date.now() + SUMMARY_PAUSE_MS;
-    broadcastGameState();
+    // Generate summary; when it arrives, schedule the next tick. The summary
+    // window starts only AFTER the summary actually arrives, so the visible
+    // "calculating" time and the 10s reading time don't double up.
+    generateGlobalSummary(queuedSummary, botEvents, function() {
+      state.summaryUntil = Date.now() + SUMMARY_PAUSE_MS;
+      scheduleNextTick(SUMMARY_PAUSE_MS + TICK_INTERVAL_MS);
+      broadcastGameState();
+    });
   }
 
+  // Hard timeout: if Claude takes more than 12 seconds, force-finish so the
+  // game never freezes waiting on the API.
+  var hardTimeout = setTimeout(function() {
+    if (!processingDone) {
+      console.log('[world] tick processing timeout, forcing finish');
+      finishTick();
+    }
+  }, 12000);
+
   if (pendingProcessing === 0) {
+    clearTimeout(hardTimeout);
     finishTick();
     return;
   }
 
-  // Execute each player's queued actions sequentially
+  // Execute each player's queued actions in parallel
   sids.forEach(function(sid) {
     var actions = state.queuedActions[sid];
     state.queuedActions[sid] = []; // clear
     var pendingActions = actions.length;
     if (pendingActions === 0) {
       pendingProcessing--;
-      if (pendingProcessing === 0) finishTick();
+      if (pendingProcessing === 0) { clearTimeout(hardTimeout); finishTick(); }
       return;
     }
     actions.forEach(function(act) {
@@ -267,7 +281,7 @@ function tickWeek() {
         pendingActions--;
         if (pendingActions === 0) {
           pendingProcessing--;
-          if (pendingProcessing === 0) finishTick();
+          if (pendingProcessing === 0) { clearTimeout(hardTimeout); finishTick(); }
         }
       });
     });
@@ -287,23 +301,26 @@ function stopTicking() {
   if (tickTimeout) { clearTimeout(tickTimeout); tickTimeout = null; }
 }
 
-function generateGlobalSummary(playerActions) {
+function generateGlobalSummary(playerActions, botEvents, done) {
   playerActions = playerActions || [];
+  botEvents = botEvents || [];
+  done = done || function(){};
 
-  if (!anthropic) {
-    // Simple fallback summary based on player actions
-    var msg;
-    if (playerActions.length > 0) {
-      msg = playerActions.map(function(a){ return a.player + ' (' + a.country + '): ' + a.result; }).join(' · ');
-    } else {
-      msg = 'La semana transcurre sin grandes movimientos. Los lideres mundiales observan.';
-    }
-    io.emit('summary', { date: fmtDate(getCurrentDate()), text: msg });
-    addLog('📜 ' + msg);
-    return;
+  function emit(text) {
+    io.emit('summary', { date: fmtDate(getCurrentDate()), text: text });
+    addLog('📜 ' + text);
+    done();
   }
 
-  // Build context focusing on player countries
+  if (!anthropic) {
+    var parts = [];
+    playerActions.forEach(function(a){ parts.push(a.player + ' (' + a.country + '): ' + a.result); });
+    botEvents.forEach(function(e){ parts.push(e); });
+    var msg = parts.length ? parts.join(' · ') : 'Semana sin grandes movimientos.';
+    if (msg.length > 180) msg = msg.substring(0, 177) + '...';
+    return emit(msg);
+  }
+
   var playerCountries = [];
   for (var sid in state.players) {
     var pp = state.players[sid];
@@ -311,38 +328,55 @@ function generateGlobalSummary(playerActions) {
   }
 
   var actionsText = playerActions.length > 0
-    ? 'Acciones de los jugadores esta semana:\n' + playerActions.map(function(a){
-        return '- ' + a.player + ' (' + a.country + ') ordeno: "' + a.action + '" -> ' + a.result;
+    ? 'Jugadores:\n' + playerActions.map(function(a){
+        return '- ' + a.player + ' (' + a.country + '): ' + a.result;
       }).join('\n')
-    : 'Ningun jugador tomo acciones esta semana.';
-
+    : 'Ningun jugador actuo.';
+  var botText = botEvents.length > 0
+    ? '\nOtras potencias:\n' + botEvents.map(function(e){ return '- ' + e; }).join('\n')
+    : '';
   var playersText = playerCountries.map(function(p){ return p.name + ' lidera ' + p.displayName; }).join(', ');
 
-  var sysPrompt = 'Sos el titular de prensa de un juego de estrategia mundial. Fecha: ' + fmtDate(getCurrentDate()) + '. Escenario: ' + (state.scenario === '1936' ? '1936' : '2026') + '.\n' +
+  var sysPrompt = 'Sos un titular de prensa de un juego de estrategia mundial. Fecha: ' + fmtDate(getCurrentDate()) + '. Escenario: ' + (state.scenario === '1936' ? '1936' : '2026') + '.\n' +
     'JUGADORES: ' + playersText + '\n\n' +
-    actionsText + '\n\n' +
+    actionsText + botText + '\n\n' +
     'REGLAS ESTRICTAS:\n' +
-    '- MAXIMO 25 palabras totales. Una sola oracion potente o dos cortas.\n' +
-    '- Tono titular de diario dramatico (ej: "Berlin moviliza divisiones hacia el este. Paris responde con silencio").\n' +
-    '- Mencionas los paises de los jugadores como protagonistas.\n' +
-    '- NUNCA pasar de 25 palabras. Sin numeros, sin parrafos.\n' +
-    '- Si no hubo acciones, una linea sobre el clima politico.';
+    '- MAXIMO 25 palabras. Una oracion potente o dos cortas.\n' +
+    '- Tono titular de diario (ej: "Berlin moviliza divisiones. Paris responde con silencio").\n' +
+    '- Mencionas TANTO acciones de jugadores como movimientos de las otras potencias (no solo jugadores).\n' +
+    '- Sin numeros, sin parrafos. Solo el titular.';
+
+  // Soft timeout: if Claude is slow, fall back so the user never waits forever
+  var fired = false;
+  var softTimeout = setTimeout(function() {
+    if (fired) return;
+    fired = true;
+    var fb = (playerActions[0] && playerActions[0].result) || botEvents[0] || 'El mundo se reordena en silencio.';
+    if (fb.length > 140) fb = fb.substring(0, 137) + '...';
+    emit(fb);
+  }, 7000);
 
   anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 120,
     system: sysPrompt,
-    messages: [{ role: 'user', content: 'Titular de la semana del ' + fmtDate(getCurrentDate()) + ' (max 25 palabras)' }]
+    messages: [{ role: 'user', content: 'Titular del ' + fmtDate(getCurrentDate()) + ' (max 25 palabras)' }]
   }).then(function(resp) {
+    if (fired) return;
+    fired = true;
+    clearTimeout(softTimeout);
     var text = resp.content[0].text || 'El mundo continua su curso.';
-    io.emit('summary', { date: fmtDate(getCurrentDate()), text: text });
-    addLog('📜 ' + text);
+    emit(text);
   }).catch(function(err) {
+    if (fired) return;
+    fired = true;
+    clearTimeout(softTimeout);
     console.error('Summary error:', err.message);
     var fallback = playerActions.length > 0
       ? playerActions.map(function(a){ return a.result; }).join(' · ')
-      : 'Semana tranquila en el mundo.';
-    io.emit('summary', { date: fmtDate(getCurrentDate()), text: fallback });
+      : (botEvents[0] || 'Semana tranquila en el mundo.');
+    if (fallback.length > 140) fallback = fallback.substring(0, 137) + '...';
+    emit(fallback);
   });
 }
 
@@ -443,23 +477,83 @@ function resolveCombats() {
   }
 }
 
+// Shared helper: a country (player or bot) advances its occupation of target.
+// Returns a short narrative describing the result, or null if it didn't happen.
+function advancePartialConquest(attackerCid, targetId) {
+  var attacker = state.countries[attackerCid];
+  var target = state.countries[targetId];
+  if (!attacker || !target || targetId === attackerCid) return null;
+  // Bots can't conquer player territory directly via this path
+  if (target.owner && target.owner !== attacker.owner) return null;
+  var cur = state.partial[targetId];
+  if (cur && cur.byCid !== attackerCid) {
+    // Different invader already there — front line shifts, restart progress
+    cur = null;
+  }
+  if (!cur) cur = state.partial[targetId] = { byCid: attackerCid, level: 0 };
+  cur.level += 1;
+  target.morale = Math.max(0, target.morale - 18);
+  target.army = Math.floor(target.army * 0.75);
+  attacker.army = Math.floor(attacker.army * 0.92);
+  if (cur.level >= 3) {
+    delete state.partial[targetId];
+    target.owner = attacker.owner;
+    target.controlledBy = attackerCid;
+    target.army = Math.max(20, Math.floor(target.army * 0.5));
+    target.morale = 40;
+    attacker.eco += Math.floor(target.eco * 0.5);
+    target.eco = Math.floor(target.eco * 0.3);
+    target.territories.forEach(function(t){
+      if (attacker.territories.indexOf(t) === -1) attacker.territories.push(t);
+    });
+    attacker.war = attacker.war.filter(function(x){return x!==targetId;});
+    target.war = target.war.filter(function(x){return x!==attackerCid;});
+    addLog('🏴 ' + attacker.displayName + ' CONQUISTO ' + target.displayName + '!');
+    return attacker.displayName + ' anexa ' + target.displayName;
+  }
+  addLog('⚔ ' + attacker.displayName + ' avanza en ' + target.displayName + ' (' + cur.level + '/3)');
+  return attacker.displayName + ' avanza territorio en ' + target.displayName;
+}
+
+// Bots take visible, varied actions every tick: build up, declare wars, propose
+// alliances, attack neighbors, send aid. Returns array of notable events for the
+// summary and broadcast.
 function runBotsTurn() {
-  var diffMod = state.difficulty === 'hard' ? 1.5 : (state.difficulty === 'easy' ? 0.5 : 1);
-  for (var cid in state.countries) {
+  var diffMod = state.difficulty === 'hard' ? 1.5 : (state.difficulty === 'easy' ? 0.6 : 1);
+  var events = [];
+  var allCids = Object.keys(state.countries);
+
+  // Pick how many bots act notably this tick (most stay passive, ~4-7 act)
+  var actCount = 4 + Math.floor(Math.random() * 4);
+  var pool = allCids.filter(function(cid) {
     var c = state.countries[cid];
-    if (c.owner) continue;
-    if (c.eco > 50 && c.pers !== 'isolationist') {
-      var spend = Math.floor(c.eco * 0.3 * diffMod);
-      var add = Math.floor(spend / 2);
-      c.eco -= spend;
-      c.army += add;
+    return c && !c.owner; // bots only
+  });
+  // Shuffle and take actCount
+  pool.sort(function(){ return Math.random() - 0.5; });
+  var actors = pool.slice(0, actCount);
+
+  // Background: every bot also passively grows
+  for (var bi = 0; bi < pool.length; bi++) {
+    var bc = state.countries[pool[bi]];
+    if (bc.eco > 30 && bc.pers !== 'isolationist') {
+      var spend = Math.floor(bc.eco * 0.2 * diffMod);
+      bc.eco -= spend;
+      bc.army += Math.floor(spend / 2);
     }
-    if (c.pers === 'aggressive' && c.army > 100) {
-      var neighbors = WORLD.neighbors[cid] || [];
+  }
+
+  actors.forEach(function(cid) {
+    var c = state.countries[cid];
+    var pers = c.pers;
+    var neighbors = (WORLD.neighbors[cid] || []).filter(function(n){ return state.countries[n]; });
+
+    // Aggressive: declare war and INVADE a weaker neighbor (advances partial conquest)
+    if (pers === 'aggressive' && neighbors.length && c.army > 80) {
       var weakest = null, weakestArmy = Infinity;
       neighbors.forEach(function(n) {
         var nc = state.countries[n];
-        if (nc && nc.army < c.army * 0.7 && nc.army < weakestArmy) {
+        if (nc.army < c.army * 0.85 && nc.army < weakestArmy && !nc.owner) {
           weakest = n; weakestArmy = nc.army;
         }
       });
@@ -467,13 +561,71 @@ function runBotsTurn() {
         if (c.war.indexOf(weakest) === -1) {
           c.war.push(weakest);
           state.countries[weakest].war.push(cid);
-          addLog(c.displayName + ' (BOT) declaro guerra a ' + state.countries[weakest].displayName);
+          events.push(c.displayName + ' declara guerra a ' + state.countries[weakest].displayName);
         }
-        if (!c._invasions) c._invasions = [];
-        c._invasions.push(weakest);
+        var msg = advancePartialConquest(cid, weakest);
+        if (msg) events.push(msg);
+        return;
       }
     }
+
+    // Diplomatic: propose alliance with strongest peaceful neighbor
+    if (pers === 'diplomatic' && neighbors.length) {
+      var allyCandidate = null;
+      neighbors.forEach(function(n) {
+        var nc = state.countries[n];
+        if (c.allies.indexOf(n) === -1 && c.war.indexOf(n) === -1 && (!allyCandidate || nc.army > state.countries[allyCandidate].army)) {
+          allyCandidate = n;
+        }
+      });
+      if (allyCandidate) {
+        c.allies.push(allyCandidate);
+        state.countries[allyCandidate].allies.push(cid);
+        events.push(c.displayName + ' firma pacto con ' + state.countries[allyCandidate].displayName);
+        return;
+      }
+    }
+
+    // Defensive: fortify, big morale boost
+    if (pers === 'defensive') {
+      c.defense = (c.defense || 0) + 25;
+      c.morale = Math.min(100, c.morale + 10);
+      events.push(c.displayName + ' refuerza sus fronteras');
+      return;
+    }
+
+    // Economic: industrialize
+    if (pers === 'economic') {
+      c.industry = (c.industry || 0) + 2;
+      c.eco += 60;
+      events.push(c.displayName + ' inaugura nuevas fabricas');
+      return;
+    }
+
+    // Isolationist: rare neutral act
+    if (pers === 'isolationist') {
+      c.morale = Math.min(100, c.morale + 5);
+      events.push(c.displayName + ' cierra fronteras al exterior');
+      return;
+    }
+
+    // Default: rearm
+    c.army += 30;
+    events.push(c.displayName + ' moviliza nuevas tropas');
+  });
+
+  // Continue advancing existing fronts even when bots aren't "actors" this tick
+  for (var pIso in state.partial) {
+    var p = state.partial[pIso];
+    var byC = state.countries[p.byCid];
+    if (!byC || byC.owner) continue; // skip player-led fronts (handled by player commands)
+    if (Math.random() < 0.5) {
+      var msg2 = advancePartialConquest(p.byCid, pIso);
+      if (msg2 && events.indexOf(msg2) === -1) events.push(msg2);
+    }
   }
+
+  return events;
 }
 
 // ── Country chat with AI ──
@@ -654,7 +806,7 @@ function commandCountry(sid, command, fallbackCountry, callback) {
 
     anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 600,
+      max_tokens: 350,
       system: sysPrompt,
       messages: [{ role: 'user', content: command }]
     }).then(function(resp) {
@@ -728,39 +880,9 @@ function applyGlobalCommand(myCid, mine, result, callback) {
   }
 
   // PARTIAL CONQUEST: each successful invasion advances occupation by 1 territory.
-  // 3 territories = full conquest. The map mutates territory by territory, not all at once.
   if (result.conquer && Array.isArray(result.conquer)) {
     result.conquer.forEach(function(targetId) {
-      var target = state.countries[targetId];
-      if (!target || targetId === myCid) return;
-      if (target.owner && target.owner !== mine.owner) return; // can't snipe another human
-      var cur = state.partial[targetId];
-      if (cur && cur.by !== mine.owner) {
-        // Another power already occupying - reset their progress (front line shifts)
-        cur = null;
-      }
-      if (!cur) cur = state.partial[targetId] = { by: mine.owner, level: 0 };
-      cur.level += 1;
-      target.morale = Math.max(0, target.morale - 20);
-      target.army = Math.floor(target.army * 0.7);
-      if (cur.level >= 3) {
-        // Full conquest after 3 territories occupied
-        delete state.partial[targetId];
-        target.owner = mine.owner;
-        target.controlledBy = myCid;
-        target.army = Math.max(20, Math.floor(target.army * 0.5));
-        target.morale = 40;
-        mine.eco += Math.floor(target.eco * 0.5);
-        target.eco = Math.floor(target.eco * 0.3);
-        target.territories.forEach(function(t){
-          if (mine.territories.indexOf(t) === -1) mine.territories.push(t);
-        });
-        mine.war = mine.war.filter(function(x){return x!==targetId;});
-        target.war = target.war.filter(function(x){return x!==myCid;});
-        addLog('🏴 ' + mine.displayName + ' CONQUISTO ' + target.displayName + '!');
-      } else {
-        addLog('⚔ ' + mine.displayName + ' ocupa territorio en ' + target.displayName + ' (' + cur.level + '/3)');
-      }
+      advancePartialConquest(myCid, targetId);
     });
   }
 

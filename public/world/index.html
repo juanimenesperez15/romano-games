@@ -604,6 +604,19 @@ setInterval(function(){
 
 socket.on('tickProcessing', function() {
   tickProcessing = true;
+  // Open the summary modal IMMEDIATELY in a "calculating" state. When the
+  // real summary arrives the text gets swapped in and the 10s countdown begins.
+  // This way the user never stares at a frozen 0 timer.
+  var modal = document.getElementById('summaryModal');
+  if (!modal) return;
+  document.getElementById('smDate').textContent = '— Calculando ' + (gameState ? gameState.currentDate : '') + ' —';
+  document.getElementById('smText').innerHTML = '<span style="opacity:.6">Las potencias deliberan...</span>';
+  document.getElementById('smCountdown').style.visibility = 'hidden';
+  document.getElementById('smBarFill').style.width = '100%';
+  modal.classList.add('s');
+  // Clear actions UI now (the orders are being executed)
+  var amEl = document.getElementById('amMsgs');
+  if (amEl) amEl.innerHTML = '';
 });
 
 var summaryTimer = null, summaryCountdown = null;
@@ -625,13 +638,11 @@ socket.on('summary', function(d) {
     el.scrollTop = el.scrollHeight;
   }
 
-  // Clear the actions UI now that the tick has been processed
-  var amEl = document.getElementById('amMsgs');
-  if (amEl) amEl.innerHTML = '';
-
-  // Show big center modal for 10 seconds
+  // The actions UI was already cleared by tickProcessing
+  // Swap the modal content from "calculating" to the real summary, then start countdown
   document.getElementById('smDate').textContent = '— ' + (d.date || '') + ' —';
   document.getElementById('smText').textContent = d.text || '';
+  document.getElementById('smCountdown').style.visibility = 'visible';
   var modal = document.getElementById('summaryModal');
   modal.classList.add('s');
   var DURATION = 10;
@@ -996,8 +1007,12 @@ function drawWorldMap() {
       var pInfo = partial[pIso];
       var polysP = WORLD_GEO[pIso];
       if (!polysP) continue;
-      var attacker = gameState.players[pInfo.by];
-      if (!attacker) continue;
+      // Resolve attacker color: player color if owned by a player, else bot's country color
+      var attackerColor = colorForCountry(pInfo.byCid || '');
+      var attackerCountry = gameState.countries[pInfo.byCid];
+      if (attackerCountry && attackerCountry.owner && gameState.players[attackerCountry.owner]) {
+        attackerColor = gameState.players[attackerCountry.owner].color;
+      }
       // Compute bbox
       var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
       polysP.forEach(function(ring) {
@@ -1021,7 +1036,7 @@ function drawWorldMap() {
       });
       wmCtx.clip();
       // Fill fraction (level/3 of height) from top with attacker color
-      wmCtx.fillStyle = attacker.color;
+      wmCtx.fillStyle = attackerColor;
       var frac = pInfo.level / 3;
       wmCtx.fillRect(minX-2, minY-2, (maxX-minX)+4, (maxY-minY)*frac + 2);
       // Front line stripe
