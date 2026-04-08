@@ -932,23 +932,36 @@ var wmCvs = document.getElementById('worldMap');
 var wmCtx = wmCvs.getContext('2d');
 var dpr = window.devicePixelRatio || 1;
 var mapTransform = { x: 0, y: 0, scale: 1 };
+var mapFitScale = 1; // minimum scale that keeps the world filling the wrap
 
 function resizeMap() {
   var wrap = document.getElementById('mapWrap');
   var ww = wrap.clientWidth, wh = wrap.clientHeight;
-  // Maintain 2:1 aspect ratio for the world map
-  // Fit map into wrap, centered
+  if (ww === 0 || wh === 0) return;
+  // The world is rendered at 2:1 (mapDrawW = ww, mapDrawH = ww/2). On portrait
+  // screens that produces a thin strip with a lot of empty parchment above and
+  // below; we compensate by computing a "fit scale" that makes the natural map
+  // height cover the wrap, then use it as both the initial and minimum scale.
   var mapW = ww, mapH = ww / 2;
-  if (mapH > wh) { mapH = wh; mapW = wh * 2; }
   wmCvs.width = ww * dpr;
   wmCvs.height = wh * dpr;
   wmCvs.style.width = ww + 'px';
   wmCvs.style.height = wh + 'px';
-  // Store map dims for drawing
   mapDrawW = mapW;
   mapDrawH = mapH;
-  mapOffX = (ww - mapW) / 2;
+  mapOffX = 0;
   mapOffY = (wh - mapH) / 2;
+  // Compute fit scale: enough to cover both dimensions of the wrap
+  var fit = 1;
+  if (mapH < wh) fit = Math.max(fit, wh / mapH);
+  mapFitScale = fit;
+  if (mapTransform.scale < fit) {
+    // First fit or window grew — re-fit and center on the world center
+    mapTransform.scale = fit;
+    mapTransform.x = (ww - mapDrawW * fit) / 2 - mapOffX;
+    mapTransform.y = (wh - mapDrawH * fit) / 2 - mapOffY;
+  }
+  clampPan();
   drawWorldMap();
 }
 var mapDrawW = 0, mapDrawH = 0, mapOffX = 0, mapOffY = 0;
@@ -1189,7 +1202,7 @@ function getCanvasCoords(e) {
 
 function zoomAt(cx, cy, factor) {
   var newScale = mapTransform.scale * factor;
-  newScale = Math.max(1, Math.min(8, newScale));
+  newScale = Math.max(mapFitScale, Math.min(10, newScale));
   if (newScale === mapTransform.scale) return;
   // Adjust translation so cx,cy stays in place
   mapTransform.x = cx - (cx - mapTransform.x) * (newScale / mapTransform.scale);
@@ -1201,13 +1214,22 @@ function zoomAt(cx, cy, factor) {
 
 function clampPan() {
   var w = wmCvs.width / dpr, h = wmCvs.height / dpr;
-  var maxX = 0, maxY = 0;
-  var minX = w - w * mapTransform.scale;
-  var minY = h - h * mapTransform.scale;
-  if (mapTransform.x > maxX) mapTransform.x = maxX;
+  // The drawn map's screen rect is:
+  //   left = mapTransform.x + mapOffX
+  //   top  = mapTransform.y + mapOffY
+  //   width  = mapDrawW * scale
+  //   height = mapDrawH * scale
+  var sw = mapDrawW * mapTransform.scale;
+  var sh = mapDrawH * mapTransform.scale;
+  var minX, maxX, minY, maxY;
+  if (sw <= w) { minX = maxX = (w - sw) / 2 - mapOffX; }
+  else        { minX = w - sw - mapOffX; maxX = -mapOffX; }
+  if (sh <= h) { minY = maxY = (h - sh) / 2 - mapOffY; }
+  else        { minY = h - sh - mapOffY; maxY = -mapOffY; }
   if (mapTransform.x < minX) mapTransform.x = minX;
-  if (mapTransform.y > maxY) mapTransform.y = maxY;
+  if (mapTransform.x > maxX) mapTransform.x = maxX;
   if (mapTransform.y < minY) mapTransform.y = minY;
+  if (mapTransform.y > maxY) mapTransform.y = maxY;
 }
 
 document.getElementById('zoomIn').onclick = function(){
@@ -1219,7 +1241,11 @@ document.getElementById('zoomOut').onclick = function(){
   zoomAt(w/2, h/2, 0.7);
 };
 document.getElementById('zoomReset').onclick = function(){
-  mapTransform = { x:0, y:0, scale:1 };
+  mapTransform.scale = mapFitScale;
+  var ww = wmCvs.width/dpr, wh = wmCvs.height/dpr;
+  mapTransform.x = (ww - mapDrawW * mapFitScale) / 2 - mapOffX;
+  mapTransform.y = (wh - mapDrawH * mapFitScale) / 2 - mapOffY;
+  clampPan();
   drawWorldMap();
 };
 
@@ -1278,7 +1304,7 @@ wmCvs.addEventListener('touchmove', function(e){
     var d = Math.sqrt(dx2*dx2+dy2*dy2);
     var factor = d / touchState.dist;
     var w = wmCvs.width/dpr, h = wmCvs.height/dpr;
-    var ns = Math.max(1, Math.min(8, touchState.scale * factor));
+    var ns = Math.max(mapFitScale, Math.min(10, touchState.scale * factor));
     mapTransform.scale = ns;
     clampPan();
     drawWorldMap();
