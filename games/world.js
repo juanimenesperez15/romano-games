@@ -1073,12 +1073,72 @@ io.on('connection', function(socket) {
 
   socket.on('disconnect', function() {
     var p = state.players[socket.id];
-    if (p) {
+    if (!p) return;
+    if (state.phase === 'playing') {
+      // Keep the slot so the player can rejoin within 5 minutes; country
+      // ownership stays put — we just mark them as disconnected.
+      p.disconnectedAt = Date.now();
+      addChat('Sistema', '#888', p.name + ' se desconecto (puede volver)');
+      broadcastLobby();
+      var sidCopy = socket.id;
+      setTimeout(function() {
+        var still = state.players[sidCopy];
+        if (still && still.disconnectedAt && Date.now() - still.disconnectedAt >= 299000) {
+          if (still.country && state.countries[still.country] && state.countries[still.country].owner === sidCopy) {
+            state.countries[still.country].owner = null;
+          }
+          delete state.players[sidCopy];
+          if (state.queuedActions[sidCopy]) delete state.queuedActions[sidCopy];
+          broadcastLobby();
+        }
+      }, 300000);
+    } else {
       addChat('Sistema', '#888', p.name + ' se desconecto');
       if (p.country && state.countries[p.country]) state.countries[p.country].owner = null;
       delete state.players[socket.id];
       broadcastLobby();
     }
+  });
+
+  // Reconnect to existing session by name. Client sends this on every connect
+  // if it has a saved name + country in localStorage.
+  socket.on('rejoin', function(data) {
+    var name = ((data && data.name) || '').substring(0, 14);
+    var country = data && data.country;
+    if (!name) return;
+    // Find disconnected slot with same name (or even active slot — same name re-attach)
+    var oldSid = null;
+    for (var sid in state.players) {
+      if (sid === socket.id) continue;
+      var pp = state.players[sid];
+      if (pp.name === name) { oldSid = sid; break; }
+    }
+    if (!oldSid) {
+      // No previous session — ignore silently, normal join flow will handle it
+      socket.emit('rejoinResult', { ok: false });
+      return;
+    }
+    var oldPlayer = state.players[oldSid];
+    state.players[socket.id] = {
+      name: oldPlayer.name,
+      color: oldPlayer.color,
+      country: oldPlayer.country
+    };
+    delete state.players[oldSid];
+    if (oldPlayer.country && state.countries[oldPlayer.country]) {
+      state.countries[oldPlayer.country].owner = socket.id;
+    }
+    if (state.queuedActions[oldSid]) {
+      state.queuedActions[socket.id] = state.queuedActions[oldSid];
+      delete state.queuedActions[oldSid];
+    }
+    addChat('Sistema', '#888', name + ' se reconecto');
+    socket.emit('rejoinResult', { ok: true, phase: state.phase, country: oldPlayer.country });
+    if (state.phase === 'playing') {
+      socket.emit('gameStart', { scenario: state.scenario });
+    }
+    broadcastLobby();
+    if (state.phase === 'playing') broadcastGameState();
   });
 });
 

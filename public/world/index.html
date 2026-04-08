@@ -379,11 +379,18 @@ function flagUrl(iso3, w) {
   if (!iso2) return '';
   return 'https://flagcdn.com/w' + (w||80) + '/' + iso2 + '.png';
 }
+function flagPlaceholder(iso3, h) {
+  // Colored badge with the ISO3 code — used when the flag CDN fails to load
+  return '<span style="display:inline-block;vertical-align:middle;height:'+h+'px;line-height:'+h+'px;padding:0 6px;border-radius:3px;background:#3b4458;color:#fff;font-size:'+Math.max(8,Math.floor(h*0.42))+'px;font-weight:800;font-family:sans-serif;letter-spacing:1px;box-shadow:0 1px 4px rgba(0,0,0,.3)">'+iso3+'</span>';
+}
+window._flagFallback = function(img, iso3, h) {
+  img.outerHTML = flagPlaceholder(iso3, h);
+};
 function flagImg(iso3, h) {
   h = h || 24;
   var url = flagUrl(iso3, h*4);
-  if (!url) return '<span style="font-size:'+(h*0.9)+'px">🌍</span>';
-  return '<img src="'+url+'" style="height:'+h+'px;width:auto;border-radius:3px;box-shadow:0 1px 4px rgba(0,0,0,.3);display:inline-block;vertical-align:middle" alt="">';
+  if (!url) return flagPlaceholder(iso3, h);
+  return '<img src="'+url+'" onerror="window._flagFallback(this,\''+iso3+'\','+h+')" style="height:'+h+'px;width:auto;border-radius:3px;box-shadow:0 1px 4px rgba(0,0,0,.3);display:inline-block;vertical-align:middle" alt="">';
 }
 
 // EU4-style saturated palette - rich historical map colors
@@ -539,8 +546,17 @@ function findCountryAt(cx, cy, w, h) {
 
 function autoJoin() {
   if (joined) return;
-  socket.emit('join', { name: document.getElementById('ni').value.trim() || 'Lider' });
+  var name = document.getElementById('ni').value.trim() || 'Lider';
+  socket.emit('join', { name: name });
   joined = true;
+  try { localStorage.setItem('worldName', name); } catch(e){}
+}
+
+function clearSavedSession() {
+  try {
+    localStorage.removeItem('worldName');
+    localStorage.removeItem('worldCountry');
+  } catch(e){}
 }
 
 
@@ -751,13 +767,38 @@ function pickCountry(iso) {
   buildFeaturedCards();
   var sr = document.getElementById('countrySearch');
   if (sr.value) sr.dispatchEvent(new Event('input'));
+  try { localStorage.setItem('worldCountry', iso); } catch(e){}
 }
 
-// Re-sync on reconnect
+// Auto-rejoin: on every connect, try to recover the previous session by name.
 socket.on('connect', function() {
+  var savedName = null, savedCountry = null;
+  try {
+    savedName = localStorage.getItem('worldName');
+    savedCountry = localStorage.getItem('worldCountry');
+  } catch(e){}
+  if (savedName) {
+    // Pre-fill the lobby name input so the player sees who they're rejoining as
+    var ni = document.getElementById('ni');
+    if (ni && !joined) ni.value = savedName;
+    socket.emit('rejoin', { name: savedName, country: savedCountry });
+  }
   if (joined && document.getElementById('ni')) {
     socket.emit('join', { name: document.getElementById('ni').value.trim() || 'Lider' });
     if (selectedCountry) socket.emit('selectCountry', { country: selectedCountry });
+  }
+});
+
+socket.on('rejoinResult', function(d) {
+  if (d && d.ok) {
+    joined = true;
+    selectedCountry = d.country || selectedCountry;
+    if (d.phase === 'playing') {
+      // Skip the lobby — we're already in game
+      document.getElementById('lobby').style.display = 'none';
+      document.getElementById('game').style.display = 'block';
+      setTimeout(resizeMap, 50);
+    }
   }
 });
 
@@ -870,6 +911,7 @@ socket.on('gameEnd', function(d) {
   document.getElementById('olT').textContent = 'GANADOR: ' + (d.winner ? d.winner.displayName : '?');
   document.getElementById('olT').style.color = '#FBBF24';
   document.getElementById('olM').innerHTML = 'Top 5:<br>' + d.scores.slice(0,5).map(function(s,i){return (i+1)+'. '+s.displayName+' ('+s.score+' pts)';}).join('<br>');
+  clearSavedSession();
 });
 
 // Timeline modal
