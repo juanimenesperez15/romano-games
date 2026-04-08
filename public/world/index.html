@@ -113,6 +113,19 @@
     #overlay h2{font-family:'Space Grotesk',sans-serif;font-size:clamp(22px,5vw,30px);font-weight:800;margin-bottom:6px;color:#1a1a1a}
     #overlay p{color:rgba(0,0,0,.5);font-size:13px}
 
+    /* Big summary modal shown for 10s after each tick */
+    #summaryModal{display:none;position:fixed;inset:0;z-index:120;background:rgba(10,8,20,.78);backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:20px;animation:smFade .4s ease}
+    #summaryModal.s{display:flex}
+    @keyframes smFade{from{opacity:0}to{opacity:1}}
+    #smBox{max-width:680px;width:100%;background:linear-gradient(180deg,#fdf6e3,#f1e4c3);border:3px solid #6b4423;border-radius:14px;padding:36px 40px;box-shadow:0 30px 80px rgba(0,0,0,.6);position:relative}
+    #smBox::before{content:'';position:absolute;inset:6px;border:1px solid rgba(107,68,35,.4);border-radius:8px;pointer-events:none}
+    #smDate{font-family:'Cinzel',serif;font-size:14px;text-transform:uppercase;letter-spacing:3px;color:#8b6332;text-align:center;margin-bottom:8px}
+    #smTitle{font-family:'Cinzel',serif;font-size:26px;font-weight:700;color:#2a1810;text-align:center;margin-bottom:18px;letter-spacing:1px}
+    #smText{font-family:'Cinzel',serif;font-size:17px;line-height:1.6;color:#2a1810;text-align:center}
+    #smCountdown{margin-top:22px;text-align:center;font-family:'Cinzel',serif;font-size:12px;color:#8b6332;letter-spacing:2px;text-transform:uppercase}
+    #smBar{margin-top:8px;height:4px;background:rgba(107,68,35,.2);border-radius:2px;overflow:hidden}
+    #smBarFill{height:100%;background:linear-gradient(90deg,#c97f30,#6b4423);width:100%;transition:width .1s linear}
+
     /* Timeline modal */
     #timelineModal{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:14px}
     #timelineModal.show{display:flex}
@@ -278,6 +291,17 @@
 </div>
 
 <div id="overlay"><h2 id="olT"></h2><p id="olM"></p></div>
+
+<!-- Big summary modal (shows for 10s after each tick) -->
+<div id="summaryModal">
+  <div id="smBox">
+    <div id="smDate">— Cronica del mundo —</div>
+    <div id="smTitle">Resumen de la semana</div>
+    <div id="smText">...</div>
+    <div id="smCountdown">El mundo continua en <span id="smSec">10</span>s</div>
+    <div id="smBar"><div id="smBarFill"></div></div>
+  </div>
+</div>
 
 <!-- Timeline modal -->
 <div id="timelineModal">
@@ -563,21 +587,51 @@ setInterval(function(){
   document.getElementById('tickTimer').textContent = 'proxima semana en ' + remaining + 's';
 }, 500);
 
+var summaryTimer = null, summaryCountdown = null;
 socket.on('summary', function(d) {
-  // Show summary as toast/highlight in log
+  // Append to log
   var el = document.getElementById('log');
-  if (!el) return;
-  var div = document.createElement('div');
-  div.className = 'lmsg';
-  div.style.background = '#f5f0ff';
-  div.style.borderLeft = '3px solid #8b5cf6';
-  div.style.padding = '6px 8px';
-  div.style.margin = '4px 0';
-  div.style.borderRadius = '4px';
-  div.style.color = '#1a1a1a';
-  div.innerHTML = '<b>📜 ' + esc(d.date) + '</b><br>' + esc(d.text);
-  el.appendChild(div);
-  el.scrollTop = el.scrollHeight;
+  if (el) {
+    var div = document.createElement('div');
+    div.className = 'lmsg';
+    div.style.background = '#f5f0ff';
+    div.style.borderLeft = '3px solid #8b5cf6';
+    div.style.padding = '6px 8px';
+    div.style.margin = '4px 0';
+    div.style.borderRadius = '4px';
+    div.style.color = '#1a1a1a';
+    div.innerHTML = '<b>📜 ' + esc(d.date) + '</b><br>' + esc(d.text);
+    el.appendChild(div);
+    el.scrollTop = el.scrollHeight;
+  }
+
+  // Clear the actions UI now that the tick has been processed
+  var amEl = document.getElementById('amMsgs');
+  if (amEl) amEl.innerHTML = '';
+
+  // Show big center modal for 10 seconds
+  document.getElementById('smDate').textContent = '— ' + (d.date || '') + ' —';
+  document.getElementById('smText').textContent = d.text || '';
+  var modal = document.getElementById('summaryModal');
+  modal.classList.add('s');
+  var DURATION = 10;
+  var start = Date.now();
+  var fill = document.getElementById('smBarFill');
+  var sec = document.getElementById('smSec');
+  if (summaryTimer) clearTimeout(summaryTimer);
+  if (summaryCountdown) clearInterval(summaryCountdown);
+  fill.style.width = '100%';
+  sec.textContent = DURATION;
+  summaryCountdown = setInterval(function(){
+    var elapsed = (Date.now() - start) / 1000;
+    var left = Math.max(0, DURATION - elapsed);
+    fill.style.width = (left / DURATION * 100) + '%';
+    sec.textContent = Math.ceil(left);
+  }, 100);
+  summaryTimer = setTimeout(function(){
+    modal.classList.remove('s');
+    if (summaryCountdown) { clearInterval(summaryCountdown); summaryCountdown = null; }
+  }, DURATION * 1000);
 });
 socket.on('lobby', function(data) {
   COUNTRIES = data.countries;

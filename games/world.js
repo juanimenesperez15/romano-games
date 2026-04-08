@@ -20,7 +20,8 @@ module.exports = function(io) {
 
 var MAX_PLAYERS = 4;
 var GAME_DURATION_DAYS = 365 * 5; // Total game duration: 5 years
-var TICK_INTERVAL_MS = 30000; // 30 sec = 1 week
+var TICK_INTERVAL_MS = 30000; // 30 sec gameplay window
+var SUMMARY_PAUSE_MS = 10000; // 10 sec summary modal display
 var DAYS_PER_TICK = 7;
 
 var state = resetState();
@@ -221,7 +222,6 @@ function tickWeek() {
 
     state.daysElapsed += DAYS_PER_TICK;
     state.tickCount++;
-    state.nextTickAt = Date.now() + TICK_INTERVAL_MS;
 
     if (state.daysElapsed >= GAME_DURATION_DAYS) {
       endGame();
@@ -229,9 +229,14 @@ function tickWeek() {
     }
 
     broadcastGameState();
-
-    // Generate global summary EVERY tick (focused on player countries)
+    // Generate summary then schedule next tick after pause
     generateGlobalSummary(queuedSummary);
+    // Schedule next gameplay tick (10s summary display + 30s gameplay)
+    scheduleNextTick(SUMMARY_PAUSE_MS + TICK_INTERVAL_MS);
+    // Update nextTickAt to AFTER the summary pause for the timer display
+    state.nextTickAt = Date.now() + SUMMARY_PAUSE_MS + TICK_INTERVAL_MS;
+    state.summaryUntil = Date.now() + SUMMARY_PAUSE_MS;
+    broadcastGameState();
   }
 
   if (pendingProcessing === 0) {
@@ -264,14 +269,17 @@ function tickWeek() {
   });
 }
 
-var tickInterval = null;
+var tickTimeout = null;
+function scheduleNextTick(delay) {
+  if (tickTimeout) clearTimeout(tickTimeout);
+  state.nextTickAt = Date.now() + delay;
+  tickTimeout = setTimeout(tickWeek, delay);
+}
 function startTicking() {
-  if (tickInterval) clearInterval(tickInterval);
-  state.nextTickAt = Date.now() + TICK_INTERVAL_MS;
-  tickInterval = setInterval(tickWeek, TICK_INTERVAL_MS);
+  scheduleNextTick(TICK_INTERVAL_MS);
 }
 function stopTicking() {
-  if (tickInterval) { clearInterval(tickInterval); tickInterval = null; }
+  if (tickTimeout) { clearTimeout(tickTimeout); tickTimeout = null; }
 }
 
 function generateGlobalSummary(playerActions) {
@@ -567,7 +575,8 @@ function commandCountry(sid, command, fallbackCountry, callback) {
       '- Declarar guerra: agrega pais a "newWar"\n' +
       '- Formar alianza: agrega a "newAlly"\n' +
       '- Hacer paz: agrega a "endWar"\n' +
-      '- Atacar otro pais: usa "targetCountry" y "targetChanges" (army: -X, morale: -X)\n\n' +
+      '- Atacar otro pais: usa "targetCountry" y "targetChanges" (army: -X, morale: -X)\n' +
+      '- CONQUISTAR un pais (invasion exitosa, ocupacion, anexion): usa "conquer": ["ESP", "FRA"]. Esto transfiere la propiedad del pais al jugador y se ve en el mapa. SOLO usalo si la accion es claramente una invasion exitosa o una conquista contundente. Considera el balance: si tu ejercito es mucho mayor que el del defensor (al menos 1.5x), la conquista tiene exito. Si es similar o menor, NO conquistas (solo dañas).\n\n' +
       'Devolve SOLO JSON valido:\n' +
       '{\n' +
       '  "valid": true,\n' +
@@ -575,6 +584,7 @@ function commandCountry(sid, command, fallbackCountry, callback) {
       '  "targetCountry": "DEU",\n' +
       '  "targetChanges": {"army": -50},\n' +
       '  "newWar": ["DEU"],\n' +
+      '  "conquer": ["ESP"],\n' +
       '  "narrative": "descripcion breve dramatica en español, 2-3 oraciones"\n' +
       '}\n' +
       'IMPORTANTE: SIEMPRE valid:true. Usa SOLO los IDs ISO (USA, DEU, FRA, etc).';
@@ -651,6 +661,30 @@ function applyGlobalCommand(myCid, mine, result, callback) {
       mine.war = mine.war.filter(function(x){return x!==wid;});
       var w = state.countries[wid];
       if (w) w.war = w.war.filter(function(x){return x!==myCid;});
+    });
+  }
+
+  // CONQUEST: transfers ownership of target country to current player (visible on map!)
+  if (result.conquer && Array.isArray(result.conquer)) {
+    result.conquer.forEach(function(targetId) {
+      var target = state.countries[targetId];
+      if (!target || targetId === myCid) return;
+      // Cannot conquer another player's country instantly via AI - only bot countries
+      if (target.owner && target.owner !== mine.owner) return;
+      target.owner = mine.owner; // ownership transfers
+      target.controlledBy = myCid;
+      target.army = Math.max(20, Math.floor(target.army * 0.3)); // garrison
+      target.morale = 40;
+      mine.eco += Math.floor(target.eco * 0.5); // war loot
+      target.eco = Math.floor(target.eco * 0.3);
+      // Inherit territories
+      target.territories.forEach(function(t){
+        if (mine.territories.indexOf(t) === -1) mine.territories.push(t);
+      });
+      // End war between them
+      mine.war = mine.war.filter(function(x){return x!==targetId;});
+      target.war = target.war.filter(function(x){return x!==myCid;});
+      addLog('🏴 ' + mine.displayName + ' CONQUISTO ' + target.displayName + '!');
     });
   }
 
