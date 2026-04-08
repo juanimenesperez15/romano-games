@@ -362,6 +362,7 @@ var inspectCountry = null;
 var WORLD_GEO = null;
 var WORLD_LOADED = false;
 var COUNTRY_CENTROIDS = {};
+var COUNTRY_AREAS = {};
 
 // ISO 3-letter to 2-letter mapping for flag CDN
 var ISO3_TO_2 = {
@@ -446,6 +447,7 @@ function loadWorldGeo() {
           var a = polygonArea(p);
           if (a > biggestArea) { biggest = p; biggestArea = a; }
         });
+        COUNTRY_AREAS[iso] = biggestArea;
         if (biggest && biggest.length) {
           var sx = 0, sy = 0;
           biggest.forEach(function(p){ sx += p[0]; sy += p[1]; });
@@ -904,21 +906,30 @@ function drawWorldMap() {
   var w = wmCvs.width / dpr, h = wmCvs.height / dpr;
   wmCtx.setTransform(dpr,0,0,dpr,0,0);
 
-  // Deep navy ocean
-  var oceanGrad = wmCtx.createRadialGradient(w/2, h/2, h*0.2, w/2, h/2, h*1.0);
-  oceanGrad.addColorStop(0, '#1f3d5e');
-  oceanGrad.addColorStop(0.5, '#152e48');
-  oceanGrad.addColorStop(1, '#0a1b2e');
+  // EU4-style parchment ocean: cream/beige background
+  var oceanGrad = wmCtx.createRadialGradient(w/2, h/2, h*0.2, w/2, h/2, h*1.1);
+  oceanGrad.addColorStop(0, '#e8d4a8');
+  oceanGrad.addColorStop(0.6, '#d4b888');
+  oceanGrad.addColorStop(1, '#a8865a');
   wmCtx.fillStyle = oceanGrad;
   wmCtx.fillRect(0, 0, w, h);
 
-  // Subtle ocean texture
-  wmCtx.strokeStyle = 'rgba(150,200,230,.04)';
-  wmCtx.lineWidth = 1;
-  for (var lat = 0; lat < h; lat += 18) {
+  // Subtle parchment grain (random dots, deterministic)
+  wmCtx.fillStyle = 'rgba(101,67,33,.05)';
+  for (var gx = 0; gx < w; gx += 7) {
+    for (var gy = 0; gy < h; gy += 7) {
+      var n = (gx*13 + gy*31) % 100;
+      if (n < 18) wmCtx.fillRect(gx, gy, 1.5, 1.5);
+    }
+  }
+
+  // Sepia wave lines on water
+  wmCtx.strokeStyle = 'rgba(101,67,33,.10)';
+  wmCtx.lineWidth = 0.8;
+  for (var lat = 0; lat < h; lat += 22) {
     wmCtx.beginPath();
-    for (var lx = 0; lx <= w; lx += 4) {
-      var ly = lat + Math.sin(lx*0.015 + lat*0.04)*1.5;
+    for (var lx = 0; lx <= w; lx += 6) {
+      var ly = lat + Math.sin(lx*0.018 + lat*0.05)*1.8;
       if (lx === 0) wmCtx.moveTo(lx, ly); else wmCtx.lineTo(lx, ly);
     }
     wmCtx.stroke();
@@ -940,15 +951,15 @@ function drawWorldMap() {
   wmCtx.scale(mapTransform.scale, mapTransform.scale);
 
   if (WORLD_LOADED) {
-    // Layered shadow for depth
-    wmCtx.fillStyle = 'rgba(0,5,15,.6)';
+    // Soft sepia shadow under countries (parchment-friendly)
+    wmCtx.fillStyle = 'rgba(60,35,15,.28)';
     for (var iso0 in WORLD_GEO) {
       var polys0 = WORLD_GEO[iso0];
       polys0.forEach(function(ring) {
         wmCtx.beginPath();
         ring.forEach(function(pt, i) {
-          var x = (pt[0]/1000)*mapDrawW + 3/mapTransform.scale;
-          var y = (pt[1]/500)*mapDrawH + 3/mapTransform.scale;
+          var x = (pt[0]/1000)*mapDrawW + 2/mapTransform.scale;
+          var y = (pt[1]/500)*mapDrawH + 2/mapTransform.scale;
           if (i===0) wmCtx.moveTo(x,y); else wmCtx.lineTo(x,y);
         });
         wmCtx.closePath();
@@ -1042,8 +1053,22 @@ function drawWorldMap() {
       });
     }
 
-    // Country names - dark brown ink, large, EU4 style
-    COUNTRIES.forEach(function(c) {
+    // Country names with collision avoidance.
+    // Bigger countries draw first and reserve space; smaller countries are skipped
+    // if their label would overlap an already-drawn one. Mi pais y el inspeccionado
+    // siempre se dibujan.
+    var sorted = COUNTRIES.slice().sort(function(a, b) {
+      var pa = (a.id === myCountry || a.id === inspectCountry) ? -1e9 : -(COUNTRY_AREAS[a.id] || 0);
+      var pb = (b.id === myCountry || b.id === inspectCountry) ? -1e9 : -(COUNTRY_AREAS[b.id] || 0);
+      return pa - pb;
+    });
+    var drawnBoxes = [];
+    var fontSize = Math.max(7, 9.5 / mapTransform.scale);
+    wmCtx.font = '700 ' + fontSize + 'px "Cinzel", serif';
+    wmCtx.textAlign = 'center';
+    wmCtx.textBaseline = 'middle';
+    wmCtx.lineJoin = 'round';
+    sorted.forEach(function(c) {
       var data = gameState.countries[c.id];
       if (!data) return;
       var ctr = COUNTRY_CENTROIDS[c.id];
@@ -1052,29 +1077,39 @@ function drawWorldMap() {
       var y = (ctr[1]/500)*mapDrawH;
       var alias = (gameState.aliases || {})[c.id];
       var label = ((alias && alias.name) || c.name).toUpperCase();
-      var fontSize = Math.max(9, 15/mapTransform.scale);
-      var minScale = label.length > 12 ? 1.6 : (label.length > 7 ? 1.0 : 0.7);
-      if (mapTransform.scale >= minScale || c.id === inspectCountry || c.id === myCountry) {
-        wmCtx.font = '900 ' + fontSize + 'px "Cinzel", serif';
-        wmCtx.textAlign = 'center';
-        wmCtx.textBaseline = 'middle';
-        wmCtx.lineJoin = 'round';
-        // Letter spacing simulation - draw with light cream outline
-        wmCtx.lineWidth = 4/mapTransform.scale;
-        wmCtx.strokeStyle = 'rgba(245,230,200,.85)';
-        wmCtx.strokeText(label, x, y);
-        // Dark brown ink fill (like aged ink)
-        wmCtx.fillStyle = '#2a1810';
-        wmCtx.fillText(label, x, y);
+      // Compute label bbox in canvas coords
+      var metrics = wmCtx.measureText(label);
+      var bw = metrics.width + 4/mapTransform.scale;
+      var bh = fontSize * 1.1;
+      var box = { x: x - bw/2, y: y - bh/2, w: bw, h: bh };
+      // Collision check
+      var forced = (c.id === myCountry || c.id === inspectCountry);
+      if (!forced) {
+        var skip = false;
+        for (var i = 0; i < drawnBoxes.length; i++) {
+          var b = drawnBoxes[i];
+          if (box.x < b.x + b.w && box.x + box.w > b.x && box.y < b.y + b.h && box.y + box.h > b.y) {
+            skip = true; break;
+          }
+        }
+        if (skip) return;
       }
+      drawnBoxes.push(box);
+      // Cream halo outline
+      wmCtx.lineWidth = 3 / mapTransform.scale;
+      wmCtx.strokeStyle = 'rgba(252,243,219,.92)';
+      wmCtx.strokeText(label, x, y);
+      // Dark brown ink fill
+      wmCtx.fillStyle = '#2a1810';
+      wmCtx.fillText(label, x, y);
     });
   }
   wmCtx.restore();
 
-  // Vignette around edges
-  var vignette = wmCtx.createRadialGradient(w/2, h/2, h*0.4, w/2, h/2, h*0.9);
-  vignette.addColorStop(0, 'rgba(0,0,0,0)');
-  vignette.addColorStop(1, 'rgba(0,0,0,.4)');
+  // Sepia vignette around edges (parchment burn)
+  var vignette = wmCtx.createRadialGradient(w/2, h/2, h*0.45, w/2, h/2, h*0.95);
+  vignette.addColorStop(0, 'rgba(60,30,10,0)');
+  vignette.addColorStop(1, 'rgba(60,30,10,.32)');
   wmCtx.fillStyle = vignette;
   wmCtx.fillRect(0, 0, w, h);
 }
