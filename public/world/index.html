@@ -1078,6 +1078,7 @@ function drawWorldMap() {
       return pa - pb;
     });
     var drawnBoxes = [];
+    var drawnLabels = {};
     var fontSize = Math.max(7, 9.5 / mapTransform.scale);
     wmCtx.font = '700 ' + fontSize + 'px "Cinzel", serif';
     wmCtx.textAlign = 'center';
@@ -1090,15 +1091,21 @@ function drawWorldMap() {
       if (!ctr) return;
       var x = (ctr[0]/1000)*mapDrawW;
       var y = (ctr[1]/500)*mapDrawH;
-      var alias = (gameState.aliases || {})[c.id];
-      var label = ((alias && alias.name) || c.name).toUpperCase();
+      // Use the conqueror's name if this country has been annexed by another power
+      var labelCid = c.id;
+      if (data.controlledBy && data.controlledBy !== c.id) labelCid = data.controlledBy;
+      var labelData = gameState.countries[labelCid];
+      var alias = (gameState.aliases || {})[labelCid];
+      var label = ((labelData && labelData.displayName) || (alias && alias.name) || c.name).toUpperCase();
+      var forced = (c.id === myCountry || c.id === inspectCountry);
+      // Dedupe: don't draw the same name twice (conquered territories of an
+      // empire share the conqueror's name; only the biggest one shows it).
+      if (!forced && drawnLabels[label]) return;
       // Compute label bbox in canvas coords
       var metrics = wmCtx.measureText(label);
       var bw = metrics.width + 4/mapTransform.scale;
       var bh = fontSize * 1.1;
       var box = { x: x - bw/2, y: y - bh/2, w: bw, h: bh };
-      // Collision check
-      var forced = (c.id === myCountry || c.id === inspectCountry);
       if (!forced) {
         var skip = false;
         for (var i = 0; i < drawnBoxes.length; i++) {
@@ -1109,6 +1116,7 @@ function drawWorldMap() {
         }
         if (skip) return;
       }
+      drawnLabels[label] = true;
       drawnBoxes.push(box);
       // Cream halo outline
       wmCtx.lineWidth = 3 / mapTransform.scale;
@@ -1281,19 +1289,26 @@ function updatePanel(cid) {
   var c = COUNTRIES.find(function(x){return x.id===cid;});
   if (!c || !gameState) return;
   var data = gameState.countries[cid];
-  var alias = (gameState.aliases || {})[cid];
-  document.getElementById('panelFlag').innerHTML = flagImg(cid, 32);
-  document.getElementById('panelName').textContent = data.displayName || c.name;
+  // If annexed, headline shows the conqueror
+  var headlineCid = cid;
+  if (data.controlledBy && data.controlledBy !== cid) headlineCid = data.controlledBy;
+  var headlineData = gameState.countries[headlineCid];
+  var headlineName = (headlineData && headlineData.displayName) || c.name;
+  document.getElementById('panelFlag').innerHTML = flagImg(headlineCid, 32);
+  document.getElementById('panelName').textContent = headlineName;
 
   var ownerName = 'IA (Bot)';
-  if (data.owner && gameState.players[data.owner]) ownerName = gameState.players[data.owner].name;
-  if (data.controlledBy) {
-    var ctrlData = gameState.countries[data.controlledBy];
-    if (ctrlData) ownerName = 'Colonia de ' + ctrlData.displayName;
+  if (headlineData && headlineData.owner && gameState.players[headlineData.owner]) {
+    ownerName = gameState.players[headlineData.owner].name;
   }
 
   var statusLines = [];
   statusLines.push('Lider: ' + ownerName);
+  if (headlineCid !== cid) {
+    var origAlias2 = (gameState.aliases || {})[cid];
+    var origName2 = (origAlias2 && origAlias2.name) || c.name;
+    statusLines.push('Antes: ' + origName2);
+  }
   if (data.allies && data.allies.length) statusLines.push('Aliados: ' + data.allies.join(', '));
   if (data.war && data.war.length) statusLines.push('En guerra con: ' + data.war.join(', '));
 
@@ -1350,16 +1365,25 @@ window.showCompactPopup = function(iso) {
   var c = COUNTRIES.find(function(x){return x.id===iso;});
   if (!c) return;
   var data = gameState.countries[iso];
-  var alias = ALIASES[iso];
-  document.getElementById('cpFlag').innerHTML = flagImg(iso, 38);
-  document.getElementById('cpName').textContent = (alias && alias.name) || c.name;
+  // If this country has been annexed by another power, show the conqueror as
+  // the headline (flag, name) and keep the original name as a subtitle.
+  var headlineCid = iso;
+  if (data.controlledBy && data.controlledBy !== iso) headlineCid = data.controlledBy;
+  var headlineData = gameState.countries[headlineCid];
+  var headlineAlias = ALIASES[headlineCid];
+  var headlineName = (headlineData && headlineData.displayName) || (headlineAlias && headlineAlias.name) || headlineCid;
+  document.getElementById('cpFlag').innerHTML = flagImg(headlineCid, 38);
+  document.getElementById('cpName').textContent = headlineName;
   var ownerName = 'IA (Bot)';
-  if (data.owner && gameState.players[data.owner]) ownerName = gameState.players[data.owner].name;
-  if (data.controlledBy) {
-    var ctrlData = gameState.countries[data.controlledBy];
-    if (ctrlData) ownerName = 'Colonia de ' + ctrlData.displayName;
+  if (headlineData && headlineData.owner && gameState.players[headlineData.owner]) {
+    ownerName = gameState.players[headlineData.owner].name;
   }
   var info = '<b>'+ownerName+'</b>';
+  if (headlineCid !== iso) {
+    var origAlias = ALIASES[iso];
+    var origName = (origAlias && origAlias.name) || c.name;
+    info += '<br><span style="color:#8b6332;font-style:italic">Antes: ' + origName + '</span>';
+  }
   if (data.allies && data.allies.length) info += '<br>Aliados: ' + data.allies.join(', ');
   if (data.war && data.war.length) info += '<br>Guerra: ' + data.war.join(', ');
   document.getElementById('cpInfo').innerHTML = info;
