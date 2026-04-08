@@ -42,6 +42,7 @@ function resetState() {
     log: [],
     winner: null,
     countryChats: {},
+    partial: {}, // iso -> { by: sid, level: 1|2|3 } - partial occupation visible on map
   };
 }
 
@@ -140,6 +141,7 @@ function broadcastGameState() {
       players: basePlayers,
       aliases: state.scenario === '1936' ? WORLD.aliases1936 : {},
       myCountry: myPlayer.country,
+      partial: state.partial || {},
     };
     for (var cid in state.countries) {
       var c = state.countries[cid];
@@ -203,6 +205,9 @@ function startGame() {
 function tickWeek() {
   if (state.phase !== 'playing') return;
   var fraction = DAYS_PER_TICK / 365;
+
+  // Notify clients we are processing this tick (eliminates "stuck at 0" lag visual)
+  io.emit('tickProcessing', { at: Date.now() });
 
   // 1. Process queued player actions
   var queuedSummary = []; // for AI global summary
@@ -313,19 +318,21 @@ function generateGlobalSummary(playerActions) {
 
   var playersText = playerCountries.map(function(p){ return p.name + ' lidera ' + p.displayName; }).join(', ');
 
-  var sysPrompt = 'Sos el narrador del juego de estrategia mundial. Fecha: ' + fmtDate(getCurrentDate()) + '. Escenario: ' + (state.scenario === '1936' ? '1936' : '2026') + '.\n' +
+  var sysPrompt = 'Sos el titular de prensa de un juego de estrategia mundial. Fecha: ' + fmtDate(getCurrentDate()) + '. Escenario: ' + (state.scenario === '1936' ? '1936' : '2026') + '.\n' +
     'JUGADORES: ' + playersText + '\n\n' +
     actionsText + '\n\n' +
-    'Generas un resumen narrativo breve (3-4 oraciones, dramatico, en español, tono periodistico-historico) de lo que paso esta semana. ' +
-    'IMPORTANTE: Foca en los paises de los JUGADORES, mencionalos por nombre y país. Narra las consecuencias de sus acciones. ' +
-    'Si no hubo acciones, describe el ambiente politico y lo que hacen los demas paises. ' +
-    'Mantene a los jugadores como protagonistas. NO menciones numeros exactos.';
+    'REGLAS ESTRICTAS:\n' +
+    '- MAXIMO 25 palabras totales. Una sola oracion potente o dos cortas.\n' +
+    '- Tono titular de diario dramatico (ej: "Berlin moviliza divisiones hacia el este. Paris responde con silencio").\n' +
+    '- Mencionas los paises de los jugadores como protagonistas.\n' +
+    '- NUNCA pasar de 25 palabras. Sin numeros, sin parrafos.\n' +
+    '- Si no hubo acciones, una linea sobre el clima politico.';
 
   anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
-    max_tokens: 350,
+    max_tokens: 120,
     system: sysPrompt,
-    messages: [{ role: 'user', content: 'Resumen de la semana del ' + fmtDate(getCurrentDate()) }]
+    messages: [{ role: 'user', content: 'Titular de la semana del ' + fmtDate(getCurrentDate()) + ' (max 25 palabras)' }]
   }).then(function(resp) {
     var text = resp.content[0].text || 'El mundo continua su curso.';
     io.emit('summary', { date: fmtDate(getCurrentDate()), text: text });
@@ -470,6 +477,30 @@ function runBotsTurn() {
 }
 
 // ── Country chat with AI ──
+// Each country has its own personality, current state, recent events and remembers
+// the conversation with each player so it feels autonomous, not generic.
+var PERSONALITY_PROFILES = {
+  aggressive: 'Lider militarista, expansionista, desconfia de promesas, valora la fuerza, suele amenazar.',
+  defensive: 'Lider cauteloso, prioriza estabilidad, evita guerras pero responde con dureza si lo provocan.',
+  diplomatic: 'Lider negociador habil, busca alianzas, propone tratos, ofrece compromiso.',
+  economic: 'Lider mercantilista, calcula todo en oro, ofrece comercio antes que ejercito.',
+  isolationist: 'Lider que rechaza la mayoria de propuestas extranjeras, no quiere entrar en conflictos ajenos.'
+};
+
+function describeCountryGoals(country, scenario) {
+  // Auto-derived goals based on personality + scenario context
+  var g = [];
+  if (country.pers === 'aggressive') g.push('expandir el territorio nacional');
+  if (country.pers === 'defensive') g.push('reforzar fronteras y disuadir agresiones');
+  if (country.pers === 'diplomatic') g.push('tejer una red de alianzas regionales');
+  if (country.pers === 'economic') g.push('crecer economicamente y dominar el comercio');
+  if (country.pers === 'isolationist') g.push('mantener neutralidad y aislamiento');
+  if (scenario === '1936') g.push('posicionarse antes del conflicto que se aproxima');
+  else g.push('proteger intereses estrategicos en un mundo multipolar');
+  if (country.war.length > 0) g.push('ganar o salir bien de la guerra contra ' + country.war.join(', '));
+  return g;
+}
+
 function getCountryChat(sid, countryId, userMsg, callback) {
   var country = state.countries[countryId];
   if (!country) return callback({ text: 'Pais no encontrado' });
@@ -477,25 +508,57 @@ function getCountryChat(sid, countryId, userMsg, callback) {
   if (!p || !p.country) return callback({ text: 'No estas en juego' });
   var mine = state.countries[p.country];
 
-  // Initialize chat history per country
-  if (!state.countryChats[countryId]) state.countryChats[countryId] = [];
-  state.countryChats[countryId].push({ role: 'user', from: p.name, text: userMsg });
+  // Per-pair chat history (player ↔ country) so the lider remembers what was said
+  var key = sid + ':' + countryId;
+  if (!state.countryChats[key]) state.countryChats[key] = [];
+  var history = state.countryChats[key];
+  history.push({ role: 'user', text: userMsg });
+  if (history.length > 10) history.splice(0, history.length - 10);
 
   var relationStatus = 'neutrales';
   if (mine.allies.indexOf(countryId) !== -1) relationStatus = 'aliados';
-  if (mine.war.indexOf(countryId) !== -1) relationStatus = 'en guerra';
+  if (mine.war.indexOf(countryId) !== -1) relationStatus = 'en GUERRA';
 
-  // If Claude API is available, use it
   if (anthropic) {
-    var sysPrompt = 'Sos el lider de ' + country.displayName + ' (personalidad: ' + country.pers + ') en el escenario ' + (state.scenario === '1936' ? '1936 (vísperas WWII)' : '2026 (tensión moderna)') + '. Hablas con ' + mine.displayName + '. Estamos ' + relationStatus + '. Tu pais tiene ejercito ' + country.army + ', economia ' + country.eco + '. Responde SIEMPRE en español, breve (1-2 frases), en tono diplomatico realista segun tu personalidad. NO uses markdown ni emojis.';
+    var profile = PERSONALITY_PROFILES[country.pers] || '';
+    var goals = describeCountryGoals(country, state.scenario);
+    var armyDesc = approxStat(country.army);
+    var econDesc = country.eco > 500 ? 'rico' : (country.eco > 200 ? 'estable' : 'pobre');
+    var moraleDesc = country.morale > 70 ? 'pueblo entusiasta' : (country.morale > 40 ? 'pueblo cansado' : 'pueblo al borde de revuelta');
+    var alliesText = country.allies.length ? country.allies.join(', ') : 'ninguno';
+    var warsText = country.war.length ? country.war.join(', ') : 'nadie';
+    var occupiedNote = '';
+    if (state.partial[countryId]) {
+      occupiedNote = '\nIMPORTANTE: tu pais tiene ' + state.partial[countryId].level + '/3 territorios ocupados por una potencia extranjera. Estas en panico/furia.';
+    }
+
+    var sysPrompt = 'Sos el LIDER de ' + country.displayName + ' (' + countryId + ') en ' + (state.scenario === '1936' ? '1936, visperas de la 2da guerra mundial' : '2026, tension moderna multipolar') + '.\n\n' +
+      'TU PERSONALIDAD: ' + profile + '\n' +
+      'TUS OBJETIVOS ACTUALES: ' + goals.join('; ') + '\n' +
+      'ESTADO DE TU NACION: ejercito ' + armyDesc + ', economia ' + econDesc + ', ' + moraleDesc + '.\n' +
+      'TUS ALIADOS: ' + alliesText + '\n' +
+      'TUS GUERRAS ABIERTAS: ' + warsText + occupiedNote + '\n\n' +
+      'HABLAS CON: ' + mine.displayName + ' (' + p.country + '). Relacion entre nuestras naciones: ' + relationStatus + '.\n' +
+      'Su ejercito esta ' + approxStat(mine.army) + '. Su personalidad ' + (mine.pers || 'desconocida') + '.\n\n' +
+      'REGLAS:\n' +
+      '- Hablas EN PRIMERA PERSONA como ese lider, no como narrador.\n' +
+      '- 1 a 3 frases. Concretas, con personalidad MARCADA.\n' +
+      '- Tomas DECISIONES propias: aceptas, rechazas, contraproponen, ponen condiciones. NUNCA respondas algo generico tipo "lo consideraremos".\n' +
+      '- Si te conviene, regateas. Si no, mandas al diablo. Pones precio o territorio en cada trato.\n' +
+      '- Recordas lo que se dijo antes en esta conversacion.\n' +
+      '- En español. Sin markdown ni emojis.';
+
+    var msgs = history.map(function(h) {
+      return { role: h.role === 'user' ? 'user' : 'assistant', content: h.text };
+    });
     anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 200,
+      max_tokens: 220,
       system: sysPrompt,
-      messages: [{ role: 'user', content: userMsg }]
+      messages: msgs
     }).then(function(resp) {
       var text = resp.content[0].text || '...';
-      state.countryChats[countryId].push({ role: 'ai', text: text });
+      history.push({ role: 'assistant', text: text });
       callback({ text: text, from: country.displayName });
     }).catch(function(err) {
       console.error('Claude error:', err.message);
@@ -576,7 +639,7 @@ function commandCountry(sid, command, fallbackCountry, callback) {
       '- Formar alianza: agrega a "newAlly"\n' +
       '- Hacer paz: agrega a "endWar"\n' +
       '- Atacar otro pais: usa "targetCountry" y "targetChanges" (army: -X, morale: -X)\n' +
-      '- CONQUISTAR un pais (invasion exitosa, ocupacion, anexion): usa "conquer": ["ESP", "FRA"]. Esto transfiere la propiedad del pais al jugador y se ve en el mapa. SOLO usalo si la accion es claramente una invasion exitosa o una conquista contundente. Considera el balance: si tu ejercito es mucho mayor que el del defensor (al menos 1.5x), la conquista tiene exito. Si es similar o menor, NO conquistas (solo dañas).\n\n' +
+      '- INVADIR / OCUPAR territorio (invasion, ofensiva, ataque terrestre): usa "conquer": ["ESP"]. Esto NO conquista el pais entero, solo ocupa UN TERRITORIO/region. Hacen falta 3 invasiones exitosas para conquistar el pais completo (cada una avanza un territorio en el mapa). Considera el balance: si tu ejercito es mayor (>1.2x del defensor) la ofensiva avanza. Si no, NO uses conquer (solo daña con targetChanges).\n\n' +
       'Devolve SOLO JSON valido:\n' +
       '{\n' +
       '  "valid": true,\n' +
@@ -664,27 +727,40 @@ function applyGlobalCommand(myCid, mine, result, callback) {
     });
   }
 
-  // CONQUEST: transfers ownership of target country to current player (visible on map!)
+  // PARTIAL CONQUEST: each successful invasion advances occupation by 1 territory.
+  // 3 territories = full conquest. The map mutates territory by territory, not all at once.
   if (result.conquer && Array.isArray(result.conquer)) {
     result.conquer.forEach(function(targetId) {
       var target = state.countries[targetId];
       if (!target || targetId === myCid) return;
-      // Cannot conquer another player's country instantly via AI - only bot countries
-      if (target.owner && target.owner !== mine.owner) return;
-      target.owner = mine.owner; // ownership transfers
-      target.controlledBy = myCid;
-      target.army = Math.max(20, Math.floor(target.army * 0.3)); // garrison
-      target.morale = 40;
-      mine.eco += Math.floor(target.eco * 0.5); // war loot
-      target.eco = Math.floor(target.eco * 0.3);
-      // Inherit territories
-      target.territories.forEach(function(t){
-        if (mine.territories.indexOf(t) === -1) mine.territories.push(t);
-      });
-      // End war between them
-      mine.war = mine.war.filter(function(x){return x!==targetId;});
-      target.war = target.war.filter(function(x){return x!==myCid;});
-      addLog('🏴 ' + mine.displayName + ' CONQUISTO ' + target.displayName + '!');
+      if (target.owner && target.owner !== mine.owner) return; // can't snipe another human
+      var cur = state.partial[targetId];
+      if (cur && cur.by !== mine.owner) {
+        // Another power already occupying - reset their progress (front line shifts)
+        cur = null;
+      }
+      if (!cur) cur = state.partial[targetId] = { by: mine.owner, level: 0 };
+      cur.level += 1;
+      target.morale = Math.max(0, target.morale - 20);
+      target.army = Math.floor(target.army * 0.7);
+      if (cur.level >= 3) {
+        // Full conquest after 3 territories occupied
+        delete state.partial[targetId];
+        target.owner = mine.owner;
+        target.controlledBy = myCid;
+        target.army = Math.max(20, Math.floor(target.army * 0.5));
+        target.morale = 40;
+        mine.eco += Math.floor(target.eco * 0.5);
+        target.eco = Math.floor(target.eco * 0.3);
+        target.territories.forEach(function(t){
+          if (mine.territories.indexOf(t) === -1) mine.territories.push(t);
+        });
+        mine.war = mine.war.filter(function(x){return x!==targetId;});
+        target.war = target.war.filter(function(x){return x!==myCid;});
+        addLog('🏴 ' + mine.displayName + ' CONQUISTO ' + target.displayName + '!');
+      } else {
+        addLog('⚔ ' + mine.displayName + ' ocupa territorio en ' + target.displayName + ' (' + cur.level + '/3)');
+      }
     });
   }
 
