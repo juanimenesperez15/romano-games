@@ -16,6 +16,7 @@ require('./games/pong')(io.of('/pong'));
 require('./games/survival')(io.of('/survival'));
 require('./games/escape')(io.of('/escape'));
 require('./games/world')(io.of('/world'));
+require('./games/bomber')(io.of('/bomber'));
 
 var PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, '0.0.0.0', function() {
