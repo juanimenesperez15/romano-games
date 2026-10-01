@@ -1,89 +1,408 @@
 module.exports = function(io) {
 
-var WORLD_W = 2000, WORLD_H = 2000, GAME_TPS = 60, NET_TPS = 30;
-var FOOD_COUNT = 400, POWERUP_COUNT = 8, SPEED = 3.2, BOOST_SPEED = 5.5;
-var SEGMENT_DIST = 12, START_LENGTH = 15, FOOD_GROW = 1, SEG_DIST_SQ = SEGMENT_DIST * SEGMENT_DIST;
+// ── Config ──
+var WORLD_W = 2600, WORLD_H = 2600, GAME_TPS = 60, NET_TPS = 30;
+var FOOD_COUNT = 650, MAX_FOOD = 1600, POWERUP_COUNT = 10;
+var SPEED = 3.2, BOOST_SPEED = 5.8;
+var SEGMENT_DIST = 12, START_LENGTH = 15, SEG_DIST_SQ = SEGMENT_DIST * SEGMENT_DIST;
+var SPAWN_PROTECT = 2500;          // ms of pass-through after (re)spawning
+var MIN_SNAKES = 9;                // bots fill up to this many snakes while someone is playing
+var BOT_RESPAWN = 2500;
+var VIEW = 1400;                   // half-size of the area sent to each client
+var HASH = 80;                     // spatial hash cell size
 
 var players = {}, food = [], powerups = [], allTimeScores = [];
+var botCounter = 0, tick = 0, botRespawnAt = 0;
 
 var POWERUP_TYPES = [
-  { type: 'speed',  color: '#FBBF24', icon: '\u26A1',           duration: 5000 },
-  { type: 'shield', color: '#3B82F6', icon: '\uD83D\uDEE1\uFE0F', duration: 4000 },
-  { type: 'magnet', color: '#A78BFA', icon: '\uD83E\uDDF2',       duration: 6000 },
-  { type: 'x2',     color: '#22C55E', icon: '\u2716\uFE0F2',      duration: 8000 },
-  { type: 'shrink', color: '#EF4444', icon: '\uD83D\uDC80',       duration: 0 },
-  { type: 'ghost',  color: '#94A3B8', icon: '\uD83D\uDC7B',       duration: 4000 },
+  { type: 'speed',  color: '#FBBF24', icon: '⚡',             duration: 5000 },
+  { type: 'shield', color: '#3B82F6', icon: '🛡️', duration: 5000 },
+  { type: 'magnet', color: '#A78BFA', icon: '🧲',       duration: 7000 },
+  { type: 'x2',     color: '#22C55E', icon: '✖️2',      duration: 8000 },
+  { type: 'shrink', color: '#EF4444', icon: '💀',       duration: 0 },
+  { type: 'ghost',  color: '#94A3B8', icon: '👻',       duration: 4000 },
 ];
 
-function spawnFood() { return { x: 20+Math.random()*(WORLD_W-40), y: 20+Math.random()*(WORLD_H-40), r: 5+Math.random()*4, color: 'hsl('+Math.floor(Math.random()*360)+', 80%, 60%)' }; }
-function spawnPowerup() { var t=POWERUP_TYPES[Math.floor(Math.random()*POWERUP_TYPES.length)]; return { id:Date.now()+Math.random(), x:100+Math.random()*(WORLD_W-200), y:100+Math.random()*(WORLD_H-200), r:12, type:t.type, color:t.color, icon:t.icon }; }
+var BOT_NAMES = ['Fideo', 'Chorizo', 'Tallarin', 'Manguera', 'Morcilla', 'Lombri', 'Vibora', 'Anaconda', 'Cordon',
+  'Salchicha', 'Spaghetti', 'Serpentina', 'Gusanito', 'Culebra', 'Pitón', 'Moncho', 'Tito', 'Cacho'];
+var BOT_SKINS = ['#F97316,#FBBF24', '#EC4899,#A78BFA', '#22C55E,#A3E635', '#EF4444,#111827', '#38BDF8,#F0F9FF',
+  '#FACC15,#1F2937,#FACC15', '#8B5CF6,#EC4899,#F59E0B', '#14B8A6,#0EA5E9', '#F43F5E,#FDA4AF', '#84CC16,#15803D'];
 
-for(var i=0;i<FOOD_COUNT;i++) food.push(spawnFood());
-for(var j=0;j<POWERUP_COUNT;j++) powerups.push(spawnPowerup());
-
-function createPlayer(id,name,skin) {
-  var x=200+Math.random()*(WORLD_W-400), y=200+Math.random()*(WORLD_H-400), angle=Math.random()*Math.PI*2, segments=[];
-  for(var i=0;i<START_LENGTH;i++) segments.push({x:x-Math.cos(angle)*i*SEGMENT_DIST,y:y-Math.sin(angle)*i*SEGMENT_DIST});
-  return {id:id,name:name||'Gusano',skin:skin||'classic',segments:segments,angle:angle,targetAngle:angle,boosting:false,score:0,alive:true,effects:{}};
+function rnd(a, b) { return a + Math.random() * (b - a); }
+function cleanName(n, def) { return String(n || def).replace(/[<>&"'`]/g, '').trim().substring(0, 15) || def; }
+function cleanSkin(s) {
+  if (typeof s !== 'string') return 'classic';
+  var ok = s.split(',').filter(function(c) { return /^#[0-9a-fA-F]{3,8}$/.test(c); }).slice(0, 6);
+  return ok.length ? ok.join(',') : 'classic';
 }
-function dropFood(segs) { var c=Math.min(segs.length,30); for(var i=0;i<c;i++){var s=segs[Math.floor(Math.random()*segs.length)]; food.push({x:Math.max(5,Math.min(WORLD_W-5,s.x+(Math.random()-.5)*30)),y:Math.max(5,Math.min(WORLD_H-5,s.y+(Math.random()-.5)*30)),r:5+Math.random()*5,color:'hsl('+Math.floor(Math.random()*360)+', 80%, 60%)'});} }
-function distSq(a,b){var dx=a.x-b.x,dy=a.y-b.y;return dx*dx+dy*dy;}
-function angleLerp(a,b,t){var d=b-a;while(d>Math.PI)d-=Math.PI*2;while(d<-Math.PI)d+=Math.PI*2;return a+d*t;}
-function roundSeg(s){return{x:Math.round(s.x),y:Math.round(s.y)};}
-function hasEffect(p,type){return p.effects[type]&&p.effects[type]>Date.now();}
-function applyPowerup(p,type){var def=POWERUP_TYPES.find(function(t){return t.type===type;});if(!def)return;if(type==='shrink'){for(var oid in players){if(oid===p.id)continue;var o=players[oid];if(!o.alive||hasEffect(o,'shield'))continue;var rm=Math.floor(o.segments.length*.2);for(var i=0;i<rm&&o.segments.length>5;i++){o.segments.pop();o.score=Math.max(0,o.score-1);}}}else{p.effects[type]=Date.now()+def.duration;}}
-function addScore(name,score){allTimeScores.push({name:name,score:score,time:Date.now()});allTimeScores.sort(function(a,b){return b.score-a.score;});if(allTimeScores.length>50)allTimeScores.length=50;}
-function getTop(){return allTimeScores.slice(0,20).map(function(e){return{n:e.name,s:e.score};});}
-function killPlayer(p,killer){p.alive=false;var fs=p.segments.length;dropFood(p.segments);addScore(p.name,fs);io.to(p.id).emit('dead',{killer:killer,score:fs,ranking:getTop()});}
+function randColor() { return 'hsl(' + Math.floor(Math.random() * 360) + ',85%,62%)'; }
+function spawnFood() { return { x: rnd(20, WORLD_W - 20), y: rnd(20, WORLD_H - 20), r: rnd(4, 7), v: 1, c: randColor() }; }
+function spawnPowerup() {
+  var t = POWERUP_TYPES[Math.floor(Math.random() * POWERUP_TYPES.length)];
+  return { x: rnd(100, WORLD_W - 100), y: rnd(100, WORLD_H - 100), r: 13, type: t.type, color: t.color, icon: t.icon };
+}
+for (var i = 0; i < FOOD_COUNT; i++) food.push(spawnFood());
+for (var j = 0; j < POWERUP_COUNT; j++) powerups.push(spawnPowerup());
 
-// Physics
-setInterval(function(){
-  var now=Date.now();
-  for(var id in players){
-    var p=players[id];if(!p.alive)continue;
-    p.angle=angleLerp(p.angle,p.targetAngle,.12);
-    var speed=SPEED;if(p.boosting)speed=BOOST_SPEED;if(hasEffect(p,'speed'))speed*=1.5;
-    if(p.boosting&&p.segments.length>5&&Math.random()<.15){var tail=p.segments.pop();food.push({x:tail.x,y:tail.y,r:4,color:'#888'});p.score=Math.max(0,p.score-2);}
-    var head=p.segments[0],nh={x:head.x+Math.cos(p.angle)*speed,y:head.y+Math.sin(p.angle)*speed};
-    if(nh.x<0||nh.x>WORLD_W||nh.y<0||nh.y>WORLD_H){if(hasEffect(p,'shield')){nh.x=Math.max(5,Math.min(WORLD_W-5,nh.x));nh.y=Math.max(5,Math.min(WORLD_H-5,nh.y));delete p.effects.shield;}else{killPlayer(p,null);continue;}}
+function distSq(a, b) { var dx = a.x - b.x, dy = a.y - b.y; return dx * dx + dy * dy; }
+function angleDiff(a, b) { var d = b - a; while (d > Math.PI) d -= Math.PI * 2; while (d < -Math.PI) d += Math.PI * 2; return d; }
+function hasEffect(p, type) { return p.effects[type] && p.effects[type] > Date.now(); }
+// Body thickness grows with length (client uses the same formula)
+function widthOf(len) { return 10 + Math.min(len / 22, 7) * 2.6; }
+
+// ── Spatial hash of every body segment, rebuilt each tick ──
+var hash = {};
+function hkey(cx, cy) { return cx * 10000 + cy; }
+function buildHash() {
+  hash = {};
+  for (var id in players) {
+    var p = players[id];
+    if (!p.alive) continue;
+    for (var i = 0; i < p.segments.length; i++) {
+      var s = p.segments[i], k = hkey(Math.floor(s.x / HASH), Math.floor(s.y / HASH));
+      (hash[k] || (hash[k] = [])).push(p, i);
+    }
+  }
+}
+// Calls fn(player, segIndex, seg) for segments near (x, y)
+function nearby(x, y, radius, fn) {
+  var x0 = Math.floor((x - radius) / HASH), x1 = Math.floor((x + radius) / HASH);
+  var y0 = Math.floor((y - radius) / HASH), y1 = Math.floor((y + radius) / HASH);
+  for (var cx = x0; cx <= x1; cx++) for (var cy = y0; cy <= y1; cy++) {
+    var b = hash[hkey(cx, cy)];
+    if (!b) continue;
+    for (var i = 0; i < b.length; i += 2) {
+      var seg = b[i].segments[b[i + 1]];   // may have been trimmed earlier this tick
+      if (seg && fn(b[i], b[i + 1], seg) === false) return;
+    }
+  }
+}
+
+// ── Players ──
+function findSpawn() {
+  var best = null, bestD = -1;
+  for (var t = 0; t < 24; t++) {
+    var c = { x: rnd(250, WORLD_W - 250), y: rnd(250, WORLD_H - 250) }, d = Infinity;
+    for (var id in players) {
+      var p = players[id];
+      if (!p.alive) continue;
+      for (var i = 0; i < p.segments.length; i += 4) d = Math.min(d, distSq(c, p.segments[i]));
+    }
+    if (d > bestD) { bestD = d; best = c; }
+    if (d > 400 * 400) break;
+  }
+  return best;
+}
+
+function createPlayer(id, name, skin, isBot) {
+  var sp = findSpawn(), angle = Math.random() * Math.PI * 2, segments = [];
+  for (var i = 0; i < START_LENGTH; i++) segments.push({ x: sp.x - Math.cos(angle) * i * SEGMENT_DIST, y: sp.y - Math.sin(angle) * i * SEGMENT_DIST });
+  var now = Date.now();
+  return {
+    id: id, name: name, skin: skin, isBot: !!isBot, segments: segments, angle: angle, targetAngle: angle,
+    boosting: false, score: 0, alive: true, effects: { spawn: now + SPAWN_PROTECT },
+    kills: 0, maxLen: START_LENGTH, bornAt: now,
+    ai: isBot ? { target: null, retarget: 0, aggro: rnd(0.2, 0.9), phase: Math.floor(Math.random() * 4) } : null,
+  };
+}
+
+function humanCount() { var c = 0; for (var id in players) if (!players[id].isBot) c++; return c; }
+
+function manageBots(now) {
+  var humans = humanCount(), bots = [];
+  for (var id in players) if (players[id].isBot) bots.push(id);
+  if (humans === 0) { bots.forEach(function(b) { delete players[b]; }); return; }
+  // Too many snakes: retire bots
+  var extra = humans + bots.length - MIN_SNAKES;
+  for (var i = 0; i < bots.length && extra > 0; i++, extra--) { dropFood(players[bots[i]]); delete players[bots[i]]; }
+  if (humans + bots.length < MIN_SNAKES && now >= botRespawnAt) {
+    var used = {}; for (var pid in players) used[players[pid].name] = true;
+    var free = BOT_NAMES.filter(function(n) { return !used[n]; });
+    var id2 = 'bot_' + (++botCounter);
+    players[id2] = createPlayer(id2, free[Math.floor(Math.random() * free.length)] || 'Gusano', BOT_SKINS[Math.floor(Math.random() * BOT_SKINS.length)], true);
+    botRespawnAt = now + BOT_RESPAWN / 2;
+  }
+}
+
+// Scatter food along the whole body, worth roughly what the snake was
+function dropFood(p) {
+  var segs = p.segments, n = Math.min(Math.ceil(segs.length / 2), 150), value = Math.max(1, Math.round(segs.length / 2 / n));
+  for (var i = 0; i < n && food.length < MAX_FOOD; i++) {
+    var s = segs[Math.floor(i * segs.length / n)];
+    food.push({ x: Math.max(5, Math.min(WORLD_W - 5, s.x + rnd(-14, 14))), y: Math.max(5, Math.min(WORLD_H - 5, s.y + rnd(-14, 14))),
+      r: 6 + value * 1.5 + Math.random() * 3, v: value + 1, c: randColor() });
+  }
+}
+
+function applyPowerup(p, type) {
+  var def = POWERUP_TYPES.find(function(t) { return t.type === type; });
+  if (!def) return;
+  if (type === 'shrink') {
+    for (var oid in players) {
+      if (oid === p.id) continue;
+      var o = players[oid];
+      if (!o.alive || hasEffect(o, 'shield')) continue;
+      var rm = Math.floor(o.segments.length * 0.2);
+      for (var i = 0; i < rm && o.segments.length > 5; i++) { o.segments.pop(); o.score = Math.max(0, o.score - 1); }
+    }
+  } else p.effects[type] = Date.now() + def.duration;
+}
+
+function addScore(name, score) {
+  allTimeScores.push({ name: name, score: score, time: Date.now() });
+  allTimeScores.sort(function(a, b) { return b.score - a.score; });
+  if (allTimeScores.length > 50) allTimeScores.length = 50;
+}
+function getTop() { return allTimeScores.slice(0, 10).map(function(e) { return { n: e.name, s: e.score }; }); }
+
+function killPlayer(p, killer) {
+  if (!p.alive) return;
+  p.alive = false;
+  var len = p.segments.length;
+  dropFood(p);
+  var h = p.segments[0];
+  io.emit('boom', { x: Math.round(h.x), y: Math.round(h.y), c: (p.skin === 'classic' ? '#4ECDC4' : p.skin.split(',')[0]), l: len });
+  if (killer) {
+    killer.kills++;
+    io.emit('kill', { k: killer.name, v: p.name, l: len });
+  }
+  if (p.isBot) { delete players[p.id]; botRespawnAt = Math.max(botRespawnAt, Date.now() + BOT_RESPAWN); return; }
+  addScore(p.name, p.maxLen);
+  io.to(p.id).emit('dead', {
+    killer: killer ? killer.name : null, score: len, max: p.maxLen, kills: p.kills,
+    time: Math.round((Date.now() - p.bornAt) / 1000), ranking: getTop(),
+  });
+}
+
+// ── Bot AI ──
+// How far we can go along `ang` before hitting a body or the border
+function clearance(b, ang, maxDist) {
+  var h = b.segments[0], w = widthOf(b.segments.length), step = 14;
+  var cos = Math.cos(ang), sin = Math.sin(ang);
+  for (var d = step; d <= maxDist; d += step) {
+    var x = h.x + cos * d, y = h.y + sin * d;
+    if (x < 20 || y < 20 || x > WORLD_W - 20 || y > WORLD_H - 20) return d;
+    var hit = false;
+    nearby(x, y, 40, function(o, i, s) {
+      if (o === b) return;
+      var r = (w + widthOf(o.segments.length)) / 2 + 8;
+      if ((s.x - x) * (s.x - x) + (s.y - y) * (s.y - y) < r * r) { hit = true; return false; }
+    });
+    if (hit) return d;
+  }
+  return Infinity;
+}
+
+function botThink(b, now) {
+  var h = b.segments[0], len = b.segments.length, ai = b.ai;
+  b.boosting = false;
+  // Pick a goal every so often: prey (if feeling brave) or the juiciest food nearby
+  if (now >= ai.retarget || !ai.target) {
+    ai.target = null; ai.hunt = null;
+    if (len > 30 && Math.random() < ai.aggro) {
+      var bestP = null, bd = 380 * 380;
+      for (var id in players) {
+        var o = players[id];
+        if (o === b || !o.alive || hasEffect(o, 'spawn')) continue;
+        var d = distSq(h, o.segments[0]);
+        if (d < bd && o.segments.length < len * 1.3) { bd = d; bestP = o; }
+      }
+      if (bestP) ai.hunt = bestP.id;
+    }
+    if (!ai.hunt) {
+      var best = null, bs = 0;
+      for (var i = 0; i < food.length; i++) {
+        var f = food[i], fd = distSq(h, f);
+        if (fd > 450 * 450) continue;
+        var sc = f.v * f.v / (Math.sqrt(fd) + 40);
+        if (sc > bs) { bs = sc; best = f; }
+      }
+      for (var k = 0; k < powerups.length; k++) {
+        var pw = powerups[k], pd = distSq(h, pw);
+        if (pd < 350 * 350 && 4 / (Math.sqrt(pd) + 40) > bs) { bs = 4 / (Math.sqrt(pd) + 40); best = pw; }
+      }
+      ai.target = best || { x: WORLD_W / 2 + rnd(-600, 600), y: WORLD_H / 2 + rnd(-600, 600) };
+    }
+    ai.retarget = now + rnd(500, 1100);
+  }
+  var gx, gy;
+  var prey = ai.hunt && players[ai.hunt];
+  if (prey && prey.alive) {
+    // Aim ahead of the prey's head to cut it off
+    var ph = prey.segments[0];
+    gx = ph.x + Math.cos(prey.angle) * 110; gy = ph.y + Math.sin(prey.angle) * 110;
+    if (len > 40 && distSq(h, ph) < 260 * 260) b.boosting = true;
+  } else {
+    if (ai.hunt) { ai.hunt = null; ai.retarget = 0; }
+    gx = ai.target.x; gy = ai.target.y;
+    if (food.indexOf(ai.target) === -1 && powerups.indexOf(ai.target) === -1 && distSq(h, ai.target) < 60 * 60) ai.retarget = 0;
+  }
+  var goal = Math.atan2(gy - h.y, gx - h.x);
+  // Walls push the goal inwards well before we get there
+  var WM = 260, vx = Math.cos(goal), vy = Math.sin(goal), push = 0;
+  if (h.x < WM) { vx += (WM - h.x) / WM * 3; push++; }
+  if (h.x > WORLD_W - WM) { vx -= (h.x - WORLD_W + WM) / WM * 3; push++; }
+  if (h.y < WM) { vy += (WM - h.y) / WM * 3; push++; }
+  if (h.y > WORLD_H - WM) { vy -= (h.y - WORLD_H + WM) / WM * 3; push++; }
+  if (push) { goal = Math.atan2(vy, vx); b.boosting = false; }
+  // Steer: the direction closest to the goal that is clear, otherwise the clearest one
+  var look = 120 + widthOf(len) * 4 + (b.boosting ? 60 : 0);
+  var bestA = goal, bestScore = -Infinity;
+  for (var c = 0; c < 13; c++) {
+    var off = (c === 0 ? 0 : Math.ceil(c / 2) * (c % 2 ? 1 : -1)) * 0.24;
+    var a = goal + off, cl = clearance(b, a, look);
+    var score = (cl === Infinity ? look + 50 : cl) - Math.abs(angleDiff(b.angle, a)) * 22 - Math.abs(off) * 30;
+    if (cl === Infinity && c === 0) { bestA = a; break; }
+    if (score > bestScore) { bestScore = score; bestA = a; }
+  }
+  b.targetAngle = bestA;
+}
+
+// ── Physics ──
+setInterval(function() {
+  var now = Date.now();
+  tick++;
+  manageBots(now);
+  buildHash();
+
+  for (var id in players) {
+    var p = players[id];
+    if (!p.alive) continue;
+    var len = p.segments.length;
+    if (p.isBot && (tick + p.ai.phase) % 4 === 0) botThink(p, now);
+
+    // Turning gets a bit slower as you grow
+    var maxTurn = Math.max(0.075, 0.16 - len * 0.00025);
+    var d = angleDiff(p.angle, p.targetAngle);
+    p.angle += Math.max(-maxTurn, Math.min(maxTurn, d * 0.25));
+    if (p.angle > Math.PI) p.angle -= Math.PI * 2; else if (p.angle < -Math.PI) p.angle += Math.PI * 2;
+
+    var canBoost = p.boosting && len > 10;
+    var speed = canBoost ? BOOST_SPEED : SPEED;
+    if (hasEffect(p, 'speed')) speed *= 1.45;
+    if (canBoost && Math.random() < 0.15) {
+      var tail = p.segments.pop();
+      if (food.length < MAX_FOOD) food.push({ x: tail.x, y: tail.y, r: 4, v: 1, c: '#9CA3AF' });
+      p.score = Math.max(0, p.score - 2);
+    }
+
+    var head = p.segments[0], nh = { x: head.x + Math.cos(p.angle) * speed, y: head.y + Math.sin(p.angle) * speed };
+    if (nh.x < 0 || nh.x > WORLD_W || nh.y < 0 || nh.y > WORLD_H) {
+      if (hasEffect(p, 'shield') || hasEffect(p, 'spawn')) {
+        nh.x = Math.max(5, Math.min(WORLD_W - 5, nh.x)); nh.y = Math.max(5, Math.min(WORLD_H - 5, nh.y));
+        p.angle += Math.PI; p.targetAngle = p.angle; delete p.effects.shield;
+      } else { killPlayer(p, null); continue; }
+    }
     p.segments.unshift(nh);
-    for(var si=1;si<p.segments.length;si++){var pv=p.segments[si-1],cu=p.segments[si],ds=distSq(pv,cu);if(ds>SEG_DIST_SQ){var d=Math.sqrt(ds),r=SEGMENT_DIST/d;cu.x=pv.x+(cu.x-pv.x)*r;cu.y=pv.y+(cu.y-pv.y)*r;}}
-    if(p.segments.length>START_LENGTH+p.score)p.segments.pop();
-    if(hasEffect(p,'magnet')){for(var mi=0;mi<food.length;mi++){var mf=food[mi],md=distSq(nh,mf);if(md<14400&&md>1){var dd=Math.sqrt(md);mf.x+=(nh.x-mf.x)/dd*2.5;mf.y+=(nh.y-mf.y)/dd*2.5;}}}
-    var multi=hasEffect(p,'x2')?2:1;
-    for(var fi=food.length-1;fi>=0;fi--){var f=food[fi],th=f.r+14;if(distSq(nh,f)<th*th){p.score+=FOOD_GROW*multi;food[fi]=spawnFood();}}
-    for(var pi=powerups.length-1;pi>=0;pi--){var pw=powerups[pi];if(distSq(nh,pw)<(pw.r+14)*(pw.r+14)){applyPowerup(p,pw.type);io.to(id).emit('powerup',{type:pw.type});powerups[pi]=spawnPowerup();}}
-    if(!hasEffect(p,'ghost')&&p.alive){var cr=16*16,died=false;
-      for(var sci=15;sci<p.segments.length;sci++){if(distSq(nh,p.segments[sci])<cr){if(hasEffect(p,'shield')){delete p.effects.shield;}else{killPlayer(p,null);died=true;}break;}}
-      if(!died){for(var oid in players){if(oid===id||died)continue;var o=players[oid];if(!o.alive)continue;for(var oci=5;oci<o.segments.length;oci++){if(distSq(nh,o.segments[oci])<cr){if(hasEffect(p,'shield')){delete p.effects.shield;}else{o.score+=Math.floor(p.segments.length/3);for(var oj=0;oj<Math.floor(p.segments.length/5);oj++){var last=o.segments[o.segments.length-1];o.segments.push({x:last.x,y:last.y});}killPlayer(p,o.name);died=true;}break;}}}}}
-  }
-  while(powerups.length<POWERUP_COUNT)powerups.push(spawnPowerup());
-},1000/GAME_TPS);
+    for (var si = 1; si < p.segments.length; si++) {
+      var pv = p.segments[si - 1], cu = p.segments[si], ds = distSq(pv, cu);
+      if (ds > SEG_DIST_SQ) { var dd = Math.sqrt(ds), r = SEGMENT_DIST / dd; cu.x = pv.x + (cu.x - pv.x) * r; cu.y = pv.y + (cu.y - pv.y) * r; }
+    }
+    while (p.segments.length > START_LENGTH + p.score) p.segments.pop();
+    if (p.segments.length > p.maxLen) p.maxLen = p.segments.length;
 
-// Network
-setInterval(function(){
-  var now=Date.now();
-  var alive=Object.values(players).filter(function(p){return p.alive;});
-  var lb=alive.sort(function(a,b){return b.segments.length-a.segments.length;}).slice(0,10).map(function(p){return{n:p.name,s:p.segments.length};});
-  for(var id in players){
-    var p=players[id];if(!p.alive)continue;
-    var head=p.segments[0],vd=900,np={};
-    for(var oid in players){var op=players[oid];if(!op.alive)continue;var oh=op.segments[0],ex=op.segments.length*SEGMENT_DIST;
-      if(Math.abs(oh.x-head.x)<vd+ex&&Math.abs(oh.y-head.y)<vd+ex){var segs;if(op.segments.length>80){segs=[];var step=Math.max(2,Math.floor(op.segments.length/60));for(var i=0;i<op.segments.length;i+=step)segs.push(roundSeg(op.segments[i]));}else{segs=op.segments.map(roundSeg);}var fx=[];for(var k in op.effects){if(op.effects[k]>now)fx.push(k);}np[oid]={n:op.name,sk:op.skin,s:segs,b:op.boosting?1:0,fx:fx};}}
-    var nf=[],npw=[];
-    for(var fi=0;fi<food.length;fi++){var f=food[fi];if(Math.abs(f.x-head.x)<vd&&Math.abs(f.y-head.y)<vd)nf.push({x:Math.round(f.x),y:Math.round(f.y),r:Math.round(f.r),c:f.color});}
-    for(var pi=0;pi<powerups.length;pi++){var pw=powerups[pi];if(Math.abs(pw.x-head.x)<vd&&Math.abs(pw.y-head.y)<vd)npw.push({x:Math.round(pw.x),y:Math.round(pw.y),r:pw.r,t:pw.type,c:pw.color,ic:pw.icon});}
-    io.volatile.to(id).emit('s',{p:np,f:nf,pw:npw,i:id,sc:p.segments.length,lb:lb});
-  }
-},1000/NET_TPS);
+    var w = widthOf(p.segments.length);
+    if (hasEffect(p, 'magnet')) {
+      for (var mi = 0; mi < food.length; mi++) {
+        var mf = food[mi], md = distSq(nh, mf);
+        if (md < 180 * 180 && md > 1) { var mdd = Math.sqrt(md); mf.x += (nh.x - mf.x) / mdd * 3; mf.y += (nh.y - mf.y) / mdd * 3; }
+      }
+    }
+    var multi = hasEffect(p, 'x2') ? 2 : 1, eatR = w / 2 + 10;
+    for (var fi = food.length - 1; fi >= 0; fi--) {
+      var f = food[fi], th = f.r + eatR;
+      if (distSq(nh, f) < th * th) {
+        p.score += f.v * multi;
+        if (food.length > FOOD_COUNT) food.splice(fi, 1); else food[fi] = spawnFood();
+      }
+    }
+    for (var pi = powerups.length - 1; pi >= 0; pi--) {
+      var pw = powerups[pi];
+      if (distSq(nh, pw) < (pw.r + eatR) * (pw.r + eatR)) {
+        applyPowerup(p, pw.type);
+        if (!p.isBot) io.to(id).emit('powerup', { type: pw.type });
+        powerups[pi] = spawnPowerup();
+      }
+    }
 
-// Sockets
-io.on('connection',function(socket){
-  socket.emit('ranking',getTop());
-  socket.on('join',function(d){var name=(d.name||'Gusano').substring(0,15);var skin=typeof d.skin==='string'?d.skin.substring(0,50):'classic';players[socket.id]=createPlayer(socket.id,name,skin);});
-  socket.on('input',function(d){var p=players[socket.id];if(!p||!p.alive)return;if(typeof d.angle==='number'&&isFinite(d.angle))p.targetAngle=d.angle;p.boosting=!!d.boost;});
-  socket.on('respawn',function(d){var name=(d.name||'Gusano').substring(0,15);var skin=typeof d.skin==='string'?d.skin.substring(0,50):'classic';players[socket.id]=createPlayer(socket.id,name,skin);});
-  socket.on('disconnect',function(){var p=players[socket.id];if(p&&p.alive)dropFood(p.segments);delete players[socket.id];});
+    // Head vs other snakes' bodies (no self-collision: coil around your enemies!)
+    if (!hasEffect(p, 'ghost') && !hasEffect(p, 'spawn')) {
+      var killer = null;
+      nearby(nh.x, nh.y, 40, function(o, idx, s) {
+        if (o === p || !o.alive || idx < 2) return;
+        var cr = (w + widthOf(o.segments.length)) / 2 * 0.8;
+        if (distSq(nh, s) < cr * cr) { killer = o; return false; }
+      });
+      if (killer) {
+        if (hasEffect(p, 'shield')) { delete p.effects.shield; p.effects.spawn = now + 600; }
+        else killPlayer(p, killer);
+      }
+    }
+  }
+  while (powerups.length < POWERUP_COUNT) powerups.push(spawnPowerup());
+}, 1000 / GAME_TPS);
+
+// ── Network ──
+function rs(s) { return { x: Math.round(s.x), y: Math.round(s.y) }; }
+setInterval(function() {
+  var now = Date.now();
+  var alive = Object.values(players).filter(function(p) { return p.alive; });
+  alive.sort(function(a, b) { return b.segments.length - a.segments.length; });
+  var lb = alive.slice(0, 10).map(function(p) { return { i: p.id, n: p.name, s: p.segments.length, b: p.isBot ? 1 : 0 }; });
+  var rank = {};
+  alive.forEach(function(p, i) { rank[p.id] = i + 1; });
+
+  for (var id in players) {
+    var p = players[id];
+    if (!p.alive || p.isBot) continue;
+    var head = p.segments[0], np = {};
+    for (var k = 0; k < alive.length; k++) {
+      var op = alive[k], oh = op.segments[0], ex = op.segments.length * SEGMENT_DIST;
+      if (Math.abs(oh.x - head.x) > VIEW + ex || Math.abs(oh.y - head.y) > VIEW + ex) continue;
+      var segs;
+      if (op.segments.length > 90) {
+        segs = []; var step = Math.max(2, Math.ceil(op.segments.length / 70));
+        for (var i = 0; i < op.segments.length; i += step) segs.push(rs(op.segments[i]));
+        segs.push(rs(op.segments[op.segments.length - 1]));
+      } else segs = op.segments.map(rs);
+      var fx = [];
+      for (var e in op.effects) if (op.effects[e] > now) fx.push(e);
+      np[op.id] = { n: op.name, sk: op.skin, s: segs, l: op.segments.length, b: op.boosting && op.segments.length > 10 ? 1 : 0, fx: fx, a: Math.round(op.angle * 100) / 100 };
+    }
+    var nf = [], npw = [];
+    for (var fi = 0; fi < food.length; fi++) {
+      var f = food[fi];
+      if (Math.abs(f.x - head.x) < VIEW && Math.abs(f.y - head.y) < VIEW) nf.push([Math.round(f.x), Math.round(f.y), Math.round(f.r), f.c]);
+    }
+    for (var pi = 0; pi < powerups.length; pi++) {
+      var pw = powerups[pi];
+      npw.push({ x: Math.round(pw.x), y: Math.round(pw.y), r: pw.r, t: pw.type, c: pw.color, ic: pw.icon });
+    }
+    io.volatile.to(id).emit('s', { p: np, f: nf, pw: npw, i: id, sc: p.segments.length, k: p.kills, rk: rank[id], n: alive.length, lb: lb });
+  }
+}, 1000 / NET_TPS);
+
+// ── Sockets ──
+io.on('connection', function(socket) {
+  socket.emit('cfg', { w: WORLD_W, h: WORLD_H });
+  socket.emit('ranking', getTop());
+  function spawn(d) {
+    d = d || {};
+    players[socket.id] = createPlayer(socket.id, cleanName(d.name, 'Gusano'), cleanSkin(d.skin), false);
+  }
+  socket.on('join', spawn);
+  socket.on('respawn', spawn);
+  socket.on('input', function(d) {
+    var p = players[socket.id];
+    if (!p || !p.alive || !d) return;
+    if (typeof d.angle === 'number' && isFinite(d.angle)) p.targetAngle = d.angle;
+    p.boosting = !!d.boost;
+  });
+  socket.on('disconnect', function() {
+    var p = players[socket.id];
+    if (p && p.alive) dropFood(p);
+    delete players[socket.id];
+  });
 });
 
 };
