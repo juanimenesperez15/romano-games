@@ -8,11 +8,16 @@ var SEGMENT_DIST = 12, START_LENGTH = 15, SEG_DIST_SQ = SEGMENT_DIST * SEGMENT_D
 var SPAWN_PROTECT = 2500;          // ms of pass-through after (re)spawning
 var MIN_SNAKES = 9;                // bots fill up to this many snakes while someone is playing
 var BOT_RESPAWN = 2500;
-var VIEW = 1400;                   // half-size of the area sent to each client
+var VIEW_DEFAULT = 1200, VIEW_MAX = 1800;   // half-size of the area sent to each client (clients report theirs)
+var LB_EVERY = 15;                 // send leaderboard every N network ticks
+var STREAKS = [3, 5, 8, 12, 20];
 var HASH = 80;                     // spatial hash cell size
 
 var players = {}, food = [], powerups = [], allTimeScores = [];
-var botCounter = 0, tick = 0, botRespawnAt = 0;
+var botCounter = 0, tick = 0, botRespawnAt = 0, nidCounter = 0, foodCounter = 0, pwCounter = 0;
+// Changes since the last network tick: clients keep their own copy of food/power-ups
+var foodAdd = [], foodDel = [], foodMoved = {}, pwDirty = true;
+var FOOD_COLORS = 12;              // client palette indexes; FOOD_COLORS itself = grey boost droppings
 
 var POWERUP_TYPES = [
   { type: 'speed',  color: '#FBBF24', icon: '⚡',             duration: 5000 },
@@ -35,11 +40,19 @@ function cleanSkin(s) {
   var ok = s.split(',').filter(function(c) { return /^#[0-9a-fA-F]{3,8}$/.test(c); }).slice(0, 6);
   return ok.length ? ok.join(',') : 'classic';
 }
-function randColor() { return 'hsl(' + Math.floor(Math.random() * 360) + ',85%,62%)'; }
-function spawnFood() { return { x: rnd(20, WORLD_W - 20), y: rnd(20, WORLD_H - 20), r: rnd(4, 7), v: 1, c: randColor() }; }
+function makeFood(x, y, r, v, c) { return { id: ++foodCounter, x: x, y: y, r: r, v: v, c: c }; }
+function spawnFood() { return makeFood(rnd(20, WORLD_W - 20), rnd(20, WORLD_H - 20), rnd(4, 7), 1, Math.floor(Math.random() * FOOD_COLORS)); }
+function addFood(f) { food.push(f); foodAdd.push(f); }
+// Eaten (or vanished) food at index i; refills up to FOOD_COUNT
+function removeFood(i, eater) {
+  foodDel.push([food[i].id, eater ? eater.nid : 0]);
+  delete foodMoved[food[i].id];
+  if (food.length > FOOD_COUNT) food.splice(i, 1);
+  else { food[i] = spawnFood(); foodAdd.push(food[i]); }
+}
 function spawnPowerup() {
   var t = POWERUP_TYPES[Math.floor(Math.random() * POWERUP_TYPES.length)];
-  return { x: rnd(100, WORLD_W - 100), y: rnd(100, WORLD_H - 100), r: 13, type: t.type, color: t.color, icon: t.icon };
+  return { id: ++pwCounter, x: rnd(100, WORLD_W - 100), y: rnd(100, WORLD_H - 100), r: 13, type: t.type, color: t.color, icon: t.icon };
 }
 for (var i = 0; i < FOOD_COUNT; i++) food.push(spawnFood());
 for (var j = 0; j < POWERUP_COUNT; j++) powerups.push(spawnPowerup());
@@ -95,13 +108,14 @@ function findSpawn() {
 }
 
 function createPlayer(id, name, skin, isBot) {
-  var sp = findSpawn(), angle = Math.random() * Math.PI * 2, segments = [];
+  // Start heading roughly towards the middle so nobody spawns facing a wall
+  var sp = findSpawn(), angle = Math.atan2(WORLD_H / 2 - sp.y, WORLD_W / 2 - sp.x) + rnd(-0.6, 0.6), segments = [];
   for (var i = 0; i < START_LENGTH; i++) segments.push({ x: sp.x - Math.cos(angle) * i * SEGMENT_DIST, y: sp.y - Math.sin(angle) * i * SEGMENT_DIST });
   var now = Date.now();
   return {
-    id: id, name: name, skin: skin, isBot: !!isBot, segments: segments, angle: angle, targetAngle: angle,
+    id: id, nid: ++nidCounter, name: name, skin: skin, isBot: !!isBot, segments: segments, angle: angle, targetAngle: angle,
     boosting: false, score: 0, alive: true, effects: { spawn: now + SPAWN_PROTECT },
-    kills: 0, maxLen: START_LENGTH, bornAt: now,
+    kills: 0, maxLen: START_LENGTH, bornAt: now, view: { w: VIEW_DEFAULT, h: VIEW_DEFAULT },
     ai: isBot ? { target: null, retarget: 0, aggro: rnd(0.2, 0.9), phase: Math.floor(Math.random() * 4) } : null,
   };
 }
@@ -129,8 +143,8 @@ function dropFood(p) {
   var segs = p.segments, n = Math.min(Math.ceil(segs.length / 2), 150), value = Math.max(1, Math.round(segs.length / 2 / n));
   for (var i = 0; i < n && food.length < MAX_FOOD; i++) {
     var s = segs[Math.floor(i * segs.length / n)];
-    food.push({ x: Math.max(5, Math.min(WORLD_W - 5, s.x + rnd(-14, 14))), y: Math.max(5, Math.min(WORLD_H - 5, s.y + rnd(-14, 14))),
-      r: 6 + value * 1.5 + Math.random() * 3, v: value + 1, c: randColor() });
+    addFood(makeFood(Math.max(5, Math.min(WORLD_W - 5, s.x + rnd(-14, 14))), Math.max(5, Math.min(WORLD_H - 5, s.y + rnd(-14, 14))),
+      6 + value * 1.5 + Math.random() * 3, value + 1, Math.floor(Math.random() * FOOD_COLORS)));
   }
 }
 
@@ -161,13 +175,16 @@ function killPlayer(p, killer) {
   var len = p.segments.length;
   dropFood(p);
   var h = p.segments[0];
-  io.emit('boom', { x: Math.round(h.x), y: Math.round(h.y), c: (p.skin === 'classic' ? '#4ECDC4' : p.skin.split(',')[0]), l: len });
+  io.to('game').emit('boom', { x: Math.round(h.x), y: Math.round(h.y), c: (p.skin === 'classic' ? '#4ECDC4' : p.skin.split(',')[0]), l: len });
   if (killer) {
     killer.kills++;
-    io.emit('kill', { k: killer.name, v: p.name, l: len });
+    io.to('game').emit('kill', { k: killer.name, v: p.name, l: len, ki: killer.nid, vi: p.nid });
+    if (STREAKS.indexOf(killer.kills) !== -1) io.to('game').emit('streak', { n: killer.name, k: killer.kills, i: killer.nid });
   }
   if (p.isBot) { delete players[p.id]; botRespawnAt = Math.max(botRespawnAt, Date.now() + BOT_RESPAWN); return; }
   addScore(p.name, p.maxLen);
+  // Keep watching: the camera follows whoever got you
+  p.deadAt = Date.now(); p.deathPos = { x: h.x, y: h.y }; p.watch = killer ? killer.id : null;
   io.to(p.id).emit('dead', {
     killer: killer ? killer.name : null, score: len, max: p.maxLen, kills: p.kills,
     time: Math.round((Date.now() - p.bornAt) / 1000), ranking: getTop(),
@@ -282,7 +299,7 @@ setInterval(function() {
     if (hasEffect(p, 'speed')) speed *= 1.45;
     if (canBoost && Math.random() < 0.15) {
       var tail = p.segments.pop();
-      if (food.length < MAX_FOOD) food.push({ x: tail.x, y: tail.y, r: 4, v: 1, c: '#9CA3AF' });
+      if (food.length < MAX_FOOD) addFood(makeFood(tail.x, tail.y, 4, 1, FOOD_COLORS));
       p.score = Math.max(0, p.score - 2);
     }
 
@@ -305,7 +322,7 @@ setInterval(function() {
     if (hasEffect(p, 'magnet')) {
       for (var mi = 0; mi < food.length; mi++) {
         var mf = food[mi], md = distSq(nh, mf);
-        if (md < 180 * 180 && md > 1) { var mdd = Math.sqrt(md); mf.x += (nh.x - mf.x) / mdd * 3; mf.y += (nh.y - mf.y) / mdd * 3; }
+        if (md < 180 * 180 && md > 1) { var mdd = Math.sqrt(md); mf.x += (nh.x - mf.x) / mdd * 3; mf.y += (nh.y - mf.y) / mdd * 3; foodMoved[mf.id] = mf; }
       }
     }
     var multi = hasEffect(p, 'x2') ? 2 : 1, eatR = w / 2 + 10;
@@ -313,7 +330,7 @@ setInterval(function() {
       var f = food[fi], th = f.r + eatR;
       if (distSq(nh, f) < th * th) {
         p.score += f.v * multi;
-        if (food.length > FOOD_COUNT) food.splice(fi, 1); else food[fi] = spawnFood();
+        removeFood(fi, p);
       }
     }
     for (var pi = powerups.length - 1; pi >= 0; pi--) {
@@ -321,7 +338,7 @@ setInterval(function() {
       if (distSq(nh, pw) < (pw.r + eatR) * (pw.r + eatR)) {
         applyPowerup(p, pw.type);
         if (!p.isBot) io.to(id).emit('powerup', { type: pw.type });
-        powerups[pi] = spawnPowerup();
+        powerups[pi] = spawnPowerup(); pwDirty = true;
       }
     }
 
@@ -339,46 +356,88 @@ setInterval(function() {
       }
     }
   }
-  while (powerups.length < POWERUP_COUNT) powerups.push(spawnPowerup());
+  while (powerups.length < POWERUP_COUNT) { powerups.push(spawnPowerup()); pwDirty = true; }
 }, 1000 / GAME_TPS);
 
 // ── Network ──
-function rs(s) { return { x: Math.round(s.x), y: Math.round(s.y) }; }
+// Bodies go out as binary: head as int16 x,y then int8 deltas between (sub-sampled) points
+function encodeBody(segs) {
+  var step = Math.max(1, Math.ceil(segs.length / 160)), pts = [];
+  for (var i = 0; i < segs.length; i += step) pts.push(segs[i]);
+  if (pts[pts.length - 1] !== segs[segs.length - 1]) pts.push(segs[segs.length - 1]);
+  var buf = Buffer.alloc(4 + (pts.length - 1) * 2);
+  var px = Math.round(pts[0].x), py = Math.round(pts[0].y);
+  buf.writeInt16LE(px, 0); buf.writeInt16LE(py, 2);
+  for (var k = 1; k < pts.length; k++) {
+    var x = Math.round(pts[k].x), y = Math.round(pts[k].y);
+    var dx = Math.max(-127, Math.min(127, x - px)), dy = Math.max(-127, Math.min(127, y - py));
+    buf.writeInt8(dx, 4 + (k - 1) * 2); buf.writeInt8(dy, 5 + (k - 1) * 2);
+    px += dx; py += dy;
+  }
+  return buf;
+}
+function encFood(f) { return [f.id, Math.round(f.x), Math.round(f.y), Math.round(f.r * 2) / 2, f.c]; }
+function encPowerups() { return powerups.map(function(pw) { return [pw.id, Math.round(pw.x), Math.round(pw.y), pw.r, pw.type, pw.color, pw.icon]; }); }
+
+var netTick = 0;
 setInterval(function() {
   var now = Date.now();
+  netTick++;
+  // Shared deltas for everyone in the game
+  var moved = Object.keys(foodMoved);
+  if (foodAdd.length || foodDel.length || moved.length) {
+    io.to('game').emit('fd', { a: foodAdd.map(encFood), r: foodDel, m: moved.map(function(id) { var f = foodMoved[id]; return [f.id, Math.round(f.x), Math.round(f.y)]; }) });
+    foodAdd = []; foodDel = []; foodMoved = {};
+  }
+  if (pwDirty) { io.to('game').emit('pw', encPowerups()); pwDirty = false; }
+
   var alive = Object.values(players).filter(function(p) { return p.alive; });
-  alive.sort(function(a, b) { return b.segments.length - a.segments.length; });
-  var lb = alive.slice(0, 10).map(function(p) { return { i: p.id, n: p.name, s: p.segments.length, b: p.isBot ? 1 : 0 }; });
-  var rank = {};
-  alive.forEach(function(p, i) { rank[p.id] = i + 1; });
+  // Encode each snake once per tick
+  var snakes = alive.map(function(op) {
+    var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (var i = 0; i < op.segments.length; i += 3) {
+      var sg = op.segments[i];
+      if (sg.x < minX) minX = sg.x; if (sg.x > maxX) maxX = sg.x; if (sg.y < minY) minY = sg.y; if (sg.y > maxY) maxY = sg.y;
+    }
+    var fx = [];
+    for (var e in op.effects) if (op.effects[e] > now) fx.push(e);
+    return { p: op, box: [minX, minY, maxX, maxY],
+      st: { i: op.nid, l: op.segments.length, b: op.boosting && op.segments.length > 10 ? 1 : 0, fx: fx.length ? fx : 0, a: Math.round(op.angle * 100) / 100, d: encodeBody(op.segments) } };
+  });
+  var sendLb = netTick % LB_EVERY === 0, lb = null, rank = {};
+  if (sendLb) {
+    alive.sort(function(a, b) { return b.segments.length - a.segments.length; });
+    lb = alive.slice(0, 10).map(function(q) { return [q.nid, q.name, q.segments.length, q.isBot ? 1 : 0]; });
+    alive.forEach(function(q, i) { rank[q.id] = i + 1; });
+  }
+  var king = sendLb && alive[0] ? alive[0] : null;
 
   for (var id in players) {
     var p = players[id];
-    if (!p.alive || p.isBot) continue;
-    var head = p.segments[0], np = {};
-    for (var k = 0; k < alive.length; k++) {
-      var op = alive[k], oh = op.segments[0], ex = op.segments.length * SEGMENT_DIST;
-      if (Math.abs(oh.x - head.x) > VIEW + ex || Math.abs(oh.y - head.y) > VIEW + ex) continue;
-      var segs;
-      if (op.segments.length > 90) {
-        segs = []; var step = Math.max(2, Math.ceil(op.segments.length / 70));
-        for (var i = 0; i < op.segments.length; i += step) segs.push(rs(op.segments[i]));
-        segs.push(rs(op.segments[op.segments.length - 1]));
-      } else segs = op.segments.map(rs);
-      var fx = [];
-      for (var e in op.effects) if (op.effects[e] > now) fx.push(e);
-      np[op.id] = { n: op.name, sk: op.skin, s: segs, l: op.segments.length, b: op.boosting && op.segments.length > 10 ? 1 : 0, fx: fx, a: Math.round(op.angle * 100) / 100 };
+    if (p.isBot) continue;
+    var sock = io.sockets.get(id);
+    if (!sock) continue;
+    // Who are we looking at? ourselves, or (when dead) whoever got us
+    var c;
+    if (p.alive) c = p.segments[0];
+    else {
+      if (!p.deadAt || now - p.deadAt > 120000) continue;
+      var w = p.watch && players[p.watch];
+      c = w && w.alive ? w.segments[0] : p.deathPos;
     }
-    var nf = [], npw = [];
-    for (var fi = 0; fi < food.length; fi++) {
-      var f = food[fi];
-      if (Math.abs(f.x - head.x) < VIEW && Math.abs(f.y - head.y) < VIEW) nf.push([Math.round(f.x), Math.round(f.y), Math.round(f.r), f.c]);
+    var vw = p.view.w + 60, vh = p.view.h + 60, list = [], meta = null;
+    var sent = sock.sentMeta || (sock.sentMeta = {});
+    for (var k = 0; k < snakes.length; k++) {
+      var sn = snakes[k], bx = sn.box;
+      if (bx[2] < c.x - vw || bx[0] > c.x + vw || bx[3] < c.y - vh || bx[1] > c.y + vh) continue;
+      list.push(sn.st);
+      if (sent[sn.p.nid] === undefined) { sent[sn.p.nid] = 1; (meta || (meta = {}))[sn.p.nid] = [sn.p.name, sn.p.skin, sn.p.isBot ? 1 : 0]; }
     }
-    for (var pi = 0; pi < powerups.length; pi++) {
-      var pw = powerups[pi];
-      npw.push({ x: Math.round(pw.x), y: Math.round(pw.y), r: pw.r, t: pw.type, c: pw.color, ic: pw.icon });
-    }
-    io.volatile.to(id).emit('s', { p: np, f: nf, pw: npw, i: id, sc: p.segments.length, k: p.kills, rk: rank[id], n: alive.length, lb: lb });
+    var msg = { me: p.nid, al: p.alive ? 1 : 0, c: [Math.round(c.x), Math.round(c.y)], p: list, sc: p.alive ? p.segments.length : 0, k: p.kills };
+    // Names/skins go on the reliable channel: they are only sent once per snake
+    if (meta) sock.emit('meta', meta);
+    io.volatile.to(id).emit('s', msg);
+    if (sendLb) sock.emit('lb', { t: lb, rk: rank[id] || 0, n: alive.length, kg: king ? [king.nid, Math.round(king.segments[0].x), Math.round(king.segments[0].y)] : null });
   }
 }, 1000 / NET_TPS);
 
@@ -389,12 +448,21 @@ io.on('connection', function(socket) {
   function spawn(d) {
     d = d || {};
     players[socket.id] = createPlayer(socket.id, cleanName(d.name, 'Gusano'), cleanSkin(d.skin), false);
+    // Full copy of the shared world; deltas follow on the 'game' room
+    socket.join('game');
+    socket.sentMeta = {};
+    socket.emit('ff', food.map(encFood));
+    socket.emit('pw', encPowerups());
   }
   socket.on('join', spawn);
   socket.on('respawn', spawn);
   socket.on('input', function(d) {
     var p = players[socket.id];
-    if (!p || !p.alive || !d) return;
+    if (!p || !d) return;
+    if (typeof d.vw === 'number' && typeof d.vh === 'number' && isFinite(d.vw) && isFinite(d.vh)) {
+      p.view.w = Math.max(300, Math.min(VIEW_MAX, d.vw)); p.view.h = Math.max(300, Math.min(VIEW_MAX, d.vh));
+    }
+    if (!p.alive) return;
     if (typeof d.angle === 'number' && isFinite(d.angle)) p.targetAngle = d.angle;
     p.boosting = !!d.boost;
   });
